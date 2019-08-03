@@ -1,0 +1,755 @@
+\documentclass[11pt,a4paper,oneside,openright]{report}
+
+\usepackage[bindingoffset=5mm,left=20mm,right=20mm,top=20mm,bottom=20mm,footskip=10mm]{geometry}
+\usepackage[utf8x]{inputenc}
+\usepackage{hyperref}
+\usepackage[english]{babel}
+\usepackage{listings}
+\usepackage{subfiles}
+\usepackage{longtable}
+\usepackage{multirow}
+\usepackage{ragged2e} 
+\usepackage{cmap} % avoid fi ligatures in pdf file
+\usepackage{amsthm} % example numbering
+\usepackage{color}
+%\usepackage{bold-extra} % for bold tt font. Remember to include bold-extra.sty file
+\usepackage{graphicx}
+\usepackage[yyyymmdd]{datetime}
+\usepackage{float}
+
+% style for code listing
+\renewcommand{\familydefault}{\sfdefault}
+\newtheorem{example}{Example}[chapter]  % example numbering
+\lstset{language=C}                     % formatting for code listing
+\lstset{basicstyle=\ttfamily,breaklines=true}
+\definecolor{darkGreen}{rgb}{0,0.4,0}
+\definecolor{mybrown}{rgb}{0.40,0.10,0.05}
+\lstset{commentstyle=\color{darkGreen}}  % comments color
+\lstset{keywordstyle=\color{blue}}       % keyword color
+\lstset{stringstyle=\color{mybrown}}     % string color
+\lstset{showstringspaces=false}          % don't mark spaces in strings
+
+\renewcommand{\dateseparator}{-}
+
+% command for turning indent back on after \flushleft
+\newcommand{\indenton}{\RaggedRight\parindent=15pt}
+
+% command for vertical space
+\newcommand{\vspacesmall}{\vspace{3mm}}
+\newcommand{\vspacebig}{\vspace{6mm}}
+
+% style for code inlined in text:
+\newcommand{\codei}[1]{\bfseries \ttfamily{#1}\normalfont}
+
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+   
+    \null %empty box needed for vfill to work
+    \vfill
+
+   {\bfseries\Huge
+    Complexvec1
+    \vspacesmall
+    
+    Complex number extension for 
+    \vspacesmall
+        
+    C++ vector class library 
+    \vspacebig
+        
+   }        
+    \vspacebig
+    
+   {\Large    
+    Agner Fog
+    \vspacebig
+    
+    \copyright\ \today. Apache license 2.0
+   }
+    
+    \vfill
+    
+    \includegraphics[width=306pt]{freesoftwarelogo.jpg}
+    \vfill
+    
+\end{titlepage}
+
+\RaggedRight
+
+\chapter{Introduction}\label{chap:Introduction}
+
+The file complexvec1.h provides classes, operators, and functions for 
+calculations with complex numbers and complex number vectors.
+This is an extension to the Vector Class Library.
+\vspacesmall
+
+The classes listed below are defined. Common operators and functions are defined for these classes:
+
+\begin {table}[H]
+\caption{Comples number vector classes}
+\label{table:ComplexVectorClasses}
+\begin{tabular}{|p{24mm}|p{20mm}|p{20mm}|p{22mm}|p{20mm}|p{28mm}|}
+\hline
+\bfseries Complex vector class & \bfseries Precision &  \bfseries Complex elements per vector & \bfseries Correspon-ding real vector class & \bfseries Total bits & \bfseries Recommended minimum \newline instruction set \\ \hline
+Complex1f  & \centering single & \centering  1 & \centering Vec4f & \centering 128 & SSE2 \\ \hline
+Complex2f  & \centering single & \centering  2 & \centering Vec4f & \centering 128 & SSE2 \\ \hline
+Complex4f  & \centering single & \centering  4 & \centering Vec8f & \centering 256 & AVX \\ \hline
+Complex8f  & \centering single & \centering  8 & \centering Vec16f & \centering 512 & AVX512 \\ \hline
+Complex1d  & \centering double & \centering  1 & \centering Vec2d & \centering 128 & SSE2 \\ \hline
+Complex2d  & \centering double & \centering  2 & \centering Vec4d & \centering 256 & AVX \\ \hline
+Complex4d  & \centering double & \centering  4 & \centering Vec8d & \centering 512 & AVX512 \\
+ \hline
+\end{tabular}
+\end{table}
+\vspacebig
+
+
+
+\section{Compiling} \label{Compiling}
+The complex vector class extension to the Vector Class Library is compiled in the same way as the Vector Class Library itself. All x86 and x86-64 platforms are supported, including Windows, Linux, and Mac OS. 
+The following C++ compilers can be used: Gnu, Clang, Microsoft, and Intel. 
+See the vector class library manual for further details.
+\vspacesmall
+
+This example shows how to use the complex number vectors:
+
+\begin{example}
+\label{exampleRandomGeneration}
+\end{example} % frame disappears if I put this after end lstlisting
+\begin{lstlisting}[frame=single]
+// Example for complex number vectors
+#include <stdio.h>
+#include "vectorclass.h"  // vector class library
+#include "complexvec1.h"  // complex number extension
+
+// function to print complex number vector:
+template <typename C>
+void printcx (const char * text, C a) {
+    auto aa = a.to_vector(); // get elements as real vector
+    printf("\n%s", text);    // print text
+    for (int n = 0; n < a.size(); n++) { // loop through elements
+        printf("(%.3G,%.3G)  ", aa[2*n], aa[2*n+1]);
+    }
+}
+
+int main() {
+    // define vectors of two complex numbers
+    Complex2d a( 1, 2, 3,  4); //  1+i*2, 3+i*4
+    Complex2d b(-2, 1, 0, -3); // -2+i*1, 0-i*3
+    Complex2d c = a + b;       // add complex numbers
+    Complex2d d = a * b;       // multiply complex numbers
+
+    // print results
+    printcx("a = ", a);        // a = (1,2)   (3,4)
+    printcx("b = ", b);        // b = (-2,1)  (0,-3)
+    printcx("c = ", c);        // c = (-1,3)  (3,1)
+    printcx("d = ", d);        // d = (-4,-3) (12,-9)
+}
+\end{lstlisting}
+\vspacesmall
+
+
+\chapter{Constructing vectors and loading data into vectors} \label{ConstructingVectors}
+
+There are many ways to create vectors and put data into vectors. These methods are listed here.
+\vspacebig
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Method & default constructor \\ \hline
+\bfseries Defined for & all complex classes \\ \hline
+\bfseries Description & the vector is created but not initialized.\newline
+The value is unpredictable \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex4f a;    // creates a vector of four complex numbers
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Method & Construct from single real \\ \hline
+\bfseries Defined for & all complex classes \\ \hline
+\bfseries Description & The parameter defines the real part of all elements.\newline The imaginary parts are zero. \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex4d a(3);  // a = (3,0) (3,0) (3,0) (3,0)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Method & Construct from single real/imaginary pair \\ \hline
+\bfseries Defined for & all complex classes \\ \hline
+\bfseries Description & All elements get the same real/imaginary values \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex4d a(3,1);  // a = (3,1) (3,1) (3,1) (3,1)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Method & Construct from multiple real/imaginary pairs \\ \hline
+\bfseries Defined for & all complex classes \\ \hline
+\bfseries Description & The parameters define all the real/imaginary pairs \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex4d a(1,0, 2,2, 3,-3, 0,4); // a = (1,0) (2,2) (3,-3) (0,4)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Method & Construct from single complex scalar \\ \hline
+\bfseries Defined for & all complex classes \\ \hline
+\bfseries Description & The complex number is broadcast into all elements \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex1d a(1,2)
+Complex4d b(a);  // a = (1,2) (1,2) (1,2) (1,2)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Method & Construct from multiple complex scalars \\ \hline
+\bfseries Defined for & all complex classes \\ \hline
+\bfseries Description & Each parameter defines one complex pair \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex1d a(1,2)
+Complex1d b(3,4)
+Complex1d c(5,6)
+Complex4d d(a,b,c,b);  // a = (1,2) (3,4) (5,6) (3,4)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Method & Construct from two complex vectors of half the size \\ \hline
+\bfseries Defined for & Complex2f, Complex4f, Complex8f, Complex2d, Complex4d \\ \hline
+\bfseries Description & The two vectors are concatenated into one bigger vector \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex2f a(1,2, 3,4)
+Complex2f b(5,6, 7,8)
+Complex4f c(a,b) // c = (1,2) (3,4) (5,6) (7,8)
+\end{lstlisting}
+\vspacebig
+
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Method & member function load(p) \\ \hline
+\bfseries Defined for & all complex classes \\ \hline
+\bfseries Description & Load data from array of same precision. 
+Each real part must be followed by the corresponding imaginary part. \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+double a[8] = {1,2,3,4,5,6,7,8};
+Complex4d b;
+b.load(a);  // b = (1,2) (3,4) (5,6) (7,8)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Method & member function store(p) \\ \hline
+\bfseries Defined for & all complex classes \\ \hline
+\bfseries Description & Save data into array of same precision. 
+Each real part is followed by the corresponding imaginary part. \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+float a[8];
+Complex4f b(1,2,3,4,5,6,7,8);
+b.store(a);  // a = {1,2,3,4,5,6,7,8}
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Method & member function real() \\ \hline
+\bfseries Defined for & Complex1f, Complex1d \\ \hline
+\bfseries Description & Get real part of complex scalar \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex1d a(1,2);
+double r = a.real();  // a = 1
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Method & member function imag() \\ \hline
+\bfseries Defined for & Complex1f, Complex1d \\ \hline
+\bfseries Description & Get imaginary part of complex scalar \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex1d a(1,2);
+double r = a.imag();  // a = 2
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Method & member function extract(i) \\ \hline
+\bfseries Defined for & all complex classes \\ \hline
+\bfseries Description & Extract one complex number from vector at position i. \newline
+The first element has index 0. \\ \hline
+\bfseries Efficiency & good with AVX512VL, medium otherwise \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex4d a(1,2 ,3,4 ,5,6, 7,8);
+Complex1d b = a.extract(1);  // b = (3,4)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Method & member function get\_low() \\ \hline
+\bfseries Defined for & Complex2f, Complex4f, Complex8f, Complex2d, Complex4d
+ \\ \hline
+\bfseries Description & Get the lower half of a complex vector \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex4d a(1,2, 3,4, 5,6, 7,8);
+Complex2d b = a.get_low();  // b = (1,2) (3,4)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Method & member function get\_high() \\ \hline
+\bfseries Defined for & Complex2f, Complex4f, Complex8f, Complex2d, Complex4d
+ \\ \hline
+\bfseries Description & Get the upper half of a complex vector \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex4d a(1,2, 3,4, 5,6, 7,8);
+Complex2d b = a.get_high();  // b = (5,6) (7,8)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Method & member function size() \\ \hline
+\bfseries Defined for & all complex classes
+ \\ \hline
+\bfseries Description & Get the number of complex pairs \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex4d a(0);
+int b = a.size();  // b = 4
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Method & member function elementtype() \\ \hline
+\bfseries Defined for & all complex classes
+ \\ \hline
+\bfseries Description & Get the precision of the numbers. \newline
+The return value is 0x110 for single precision and 0x111 for double precision complex number vectors.
+Non-complex vector classes return other values, defined in vcl\_manual.pdf \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex4f a(0);
+int b = a.elementtype();  // b = 0x110
+\end{lstlisting}
+\vspacebig
+
+
+\chapter{Operators}\label{chap:Operators}
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Operator & + \\ \hline
+\bfseries Defined for & all complex classes  \\ \hline
+\bfseries Description & Add two complex number vectors, or one complex number vector and one real scalar of the same precision \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex2f a(1,2, 3,4);
+Complex2f b(5,6, 7,8);
+Complex2f c = a + b;     // c = (6,8)  (10,12)
+Complex2f d = a + 10.0f; // d = (11,2) (13,4)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Operator & - \\ \hline
+\bfseries Defined for & all complex classes  \\ \hline
+\bfseries Description & Subtract two complex number vectors, or one complex number vector and one real scalar of the same precision \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex2f a(5,6,  7,8));
+Complex2f b(1,-1, 2,3);
+Complex2f c = a - b;     // c = (4,7) (5,5)
+Complex2f d = a - 2.0f;  // d = (3,6) (5,8)
+Complex2f e = -a;        // e = (-5,-6) (-7,-8)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Operator & * \\ \hline
+\bfseries Defined for & all complex classes  \\ \hline
+\bfseries Description & Multiply two complex number vectors, or one complex number vector and one real scalar of the same precision \\ \hline
+\bfseries Efficiency & medium \\ \hline
+\bfseries Accuracy & Complex multiplication involves the calculation of sums of products. Loss of precision may occur if the result is close to zero. It is possible that the results of \codei{a * b} and \codei{b * a} are slightly different in this case. \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex2f a(5,6,  0,2));
+Complex2f b(2,-1, 4,3);
+Complex2f c = a * b;     // c = (16,7)  (-6,8)
+Complex2f d = a * 2.0f;  // d = (10,12) (0,4)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Operator & / \\ \hline
+\bfseries Defined for & all complex classes  \\ \hline
+\bfseries Description & Divide two complex number vectors, or one complex number vector and one real scalar of the same precision \\ \hline
+\bfseries Efficiency & medium \\ \hline
+\bfseries Accuracy & Complex division involves the same possible  loss of precision as complex multiplication. \\ \hline
+
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex2f a(2,4, 8,4);
+Complex2f b(1,2, 0,4);
+Complex2f c = a / b;     // c = (2,0)      (1,-2)
+Complex2f d = a / 2.0f;  // d = (1,2)      (4,2)
+Complex2f e = 2.0f / a;  // e = (0.4,-0.8) (0,-0.5)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Operator & $\sim$ \\ \hline
+\bfseries Defined for & all complex classes  \\ \hline
+\bfseries Description & Complex conjugate. The sign of the imaginary part is inverted \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex2f a(1,2, 3,4);
+Complex2f b = ~ a;     // b = (1,-2) (3,-4)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Operator & == \\ \hline
+\bfseries Defined for & all complex classes  \\ \hline
+\bfseries Description & Compare for equality.\newline
+The result is a boolean vector as defined by the vector class library.\newline
+One complex number element corresponds to two boolean elements with the same value. \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex2f a(1, 2, 3,4);
+Complex2f b(1,-2, 3,4);
+Vec4fb    c = (a == b);  // c = (false,false,true,true)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Operator & != \\ \hline
+\bfseries Defined for & all complex classes  \\ \hline
+\bfseries Description & Compare for not equal.\newline
+The result is a boolean vector as defined by the vector class library.\newline
+One complex number element corresponds to two boolean elements with the same value. \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex2f a(1 ,2, 3,4);
+Complex2f b(1,-2, 3,4);
+Vec4fb    c = (a != b);  // c = (true,true,false,false)
+\end{lstlisting}
+\vspacebig
+
+
+\chapter{Mathematical functions}\label{chap:MathematicalFunctions}
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Function & abs \\ \hline
+\bfseries Defined for & all complex classes  \\ \hline
+\bfseries Description & Gives the absolute value of each complex number element (also called modulus or Euclidean norm). \newline
+The result is real numbers. \\ \hline
+\bfseries Efficiency & medium \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex2f a(0,2, 3,4);
+Complex2f b = abs(a); // b = (2,0) (5,0)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Function & csqrt \\ \hline
+\bfseries Defined for & all complex classes  \\ \hline
+\bfseries Description & Calculates the principal square root of complex numbers. \\ \hline
+\bfseries Efficiency & medium \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex4d a(-3,4, 3,-4, -16,0, -16,-0.)
+Complex4d b = csqrt(a); // b = (1,2) (2,-1) (0,4) (0,-4);
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{28mm}|p{100mm}|}
+\hline
+\bfseries Function & cexp \\ \hline
+\bfseries Defined for & all complex classes  \\ \hline
+\bfseries Description & Calculates the complex exponential function \\ \hline
+\bfseries Implementation & The files vectormath\_exp.h and vectormath\_trig.h
+must be included before complexvec1.h. Must use version 2.00 or later of VCL. \\ \hline
+\bfseries Efficiency & poor \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+const double pi = 3.14159265358979323846;
+Complex2d a(0,pi/2, 1,pi);
+Complex2d b = cexp(a); // b = (0,1) (-2.71828,0)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{28mm}|p{100mm}|}
+\hline
+\bfseries Function & clog \\ \hline
+\bfseries Defined for & all complex classes  \\ \hline
+\bfseries Description & Calculates the principal complex logarithm \\ \hline
+\bfseries Implementation & The files vectormath\_exp.h and vectormath\_trig.h
+must be included before complexvec1.h. Must use version 2.00 or later of VCL. \\ \hline
+\bfseries Efficiency & poor \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+const double e = 2.71828182845904523536;
+Complex2d a(0,-1, e,0);
+Complex2d b = clog(a); // b = (0,-1.5708) (1,0)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{28mm}|p{100mm}|}
+\hline
+\bfseries Function & chorizontal\_add \\ \hline
+\bfseries Defined for & all complex classes  \\ \hline
+\bfseries Description & Calculates the sum of the complex elements of a vector \\ \hline
+\bfseries Implementation & Must use version 2.00 or later of VCL. \\ \hline
+\bfseries Efficiency & medium \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex4d x(1,2, 3,4, 5,6, 7,8);
+Complex1d y = chorizontal_add(x); // y = (16,20)
+\end{lstlisting}
+\vspacebig
+
+
+\chapter{Other functions}\label{chap:OtherFunctions}
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Function & to\_float \\ \hline
+\bfseries Defined for & Complex1d, Complex2d, Complex4d  \\ \hline
+\bfseries Description & Convert from double precision to single precision \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex2d a(1.0,2.0, 3.0,4.0);
+Complex2f b = to_float(a); // b = (1.0f,2.0f) (3.0f,4.0f)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Function & to\_double \\ \hline
+\bfseries Defined for & Complex1f, Complex2f, Complex4f  \\ \hline
+\bfseries Description & Convert from single precision to double precision \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex2f a(1.0f,2.0f, 3.0f,4.0f);
+Complex2d b = to_double(a); // b = (1.0,2.0) (3.0,4.0)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Function & to\_vector \\ \hline
+\bfseries Defined for & all complex classes  \\ \hline
+\bfseries Description & Convert to a vector of interleaved real and imaginary parts. \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex2f a(1,2, 3,4);
+Vec4f     b = a.to_vector(); // b = (1,2,3,4)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Function & select \\ \hline
+\bfseries Defined for & All complex vectors  \\ \hline
+\bfseries Description & Choose between the elements of two vectors.
+This is useful when there are branches in the algorithm.\newline
+The selector is a boolean vector defined in the Vector Class Library.
+The number of elements in the boolean vector must be double the number of elements in the complex vector. Each pair of boolean elemens must have the same value, unless you want to separate real and imaginary parts. \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex2d a(1,2, 3,4);
+Complex2d b(5,6, 7,8);
+Vec4db s(true,true,false,false); // boolean vector
+Complex2d c = select(s, a, b);   // c = (1,2) (7,8)
+\end{lstlisting}
+\vspacebig
+
+
+\end{document}

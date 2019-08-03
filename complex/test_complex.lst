@@ -1,0 +1,36 @@
+# Test data for complex1.h under VCL
+# To use with runtest.sh from testbench repository
+
+$compiler=1
+$mode=64
+$testbench=testbench_complex.cpp
+$include=./
+$outfile=test_complex.txt
+$seed=1
+
+
+# test case, vector type, return type, instruction set
+
+# signed integer types
+
+# operators
+1 2 3 4 5 6 7 8 9 10 11 ,  Complex1f Complex2f Complex4f  Complex8f Complex1d Complex2d Complex4d , , 2 5 7 8 9 10
+
+# constructors
+20 21 22 23 , Complex1f Complex2f Complex4f  Complex8f Complex1d Complex2d Complex4d , , 3 6 8 9 10
+
+# constructor from two halves, split into two halves
+24 27 28 , Complex2f Complex4f  Complex8f Complex2d Complex4d , , 4 5 8 9 10
+
+# real, imag
+25 26 , Complex1f Complex1d  , , 7 8 10
+
+# various functions: extract, ==, !=, select, abs, sqrt, cexp, clog
+29 30 31 32 40 41 100 101 , Complex1f Complex2f Complex4f  Complex8f Complex1d Complex2d Complex4d , , 3 7 8 9 10
+
+# to_float
+33 , Complex1d Complex2d Complex4d , , 3 7 8 9 10
+
+# to_double
+34 , Complex1f Complex2f Complex4f , , 3 7 8 9 10
+

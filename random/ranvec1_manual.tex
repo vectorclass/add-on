@@ -1,0 +1,447 @@
+\documentclass[11pt,a4paper,oneside,openright]{report}
+
+\usepackage[bindingoffset=5mm,left=20mm,right=20mm,top=20mm,bottom=20mm,footskip=10mm]{geometry}
+\usepackage[utf8x]{inputenc}
+\usepackage{hyperref}
+\usepackage[english]{babel}
+\usepackage{listings}
+\usepackage{subfiles}
+\usepackage{longtable}
+\usepackage{multirow}
+\usepackage{ragged2e} 
+\usepackage{cmap} % avoid fi ligatures in pdf file
+\usepackage{amsthm} % example numbering
+\usepackage{color}
+%\usepackage{bold-extra} % for bold tt font. Remember to include bold-extra.sty file
+\usepackage{graphicx}
+\usepackage[yyyymmdd]{datetime}
+\usepackage{float}
+
+% style for code listing
+\renewcommand{\familydefault}{\sfdefault}
+\newtheorem{example}{Example}[chapter]  % example numbering
+\lstset{language=C}                     % formatting for code listing
+\lstset{basicstyle=\ttfamily,breaklines=true}
+\definecolor{darkGreen}{rgb}{0,0.4,0}
+\definecolor{mybrown}{rgb}{0.40,0.10,0.05}
+\lstset{commentstyle=\color{darkGreen}}  % comments color
+\lstset{keywordstyle=\color{blue}}       % keyword color
+\lstset{stringstyle=\color{mybrown}}     % string color
+\lstset{showstringspaces=false}          % don't mark spaces in strings
+
+\renewcommand{\dateseparator}{-}
+
+% command for turning indent back on after \flushleft
+\newcommand{\indenton}{\RaggedRight\parindent=15pt}
+
+% command for vertical space
+\newcommand{\vspacesmall}{\vspace{3mm}}
+\newcommand{\vspacebig}{\vspace{6mm}}
+
+% style for code inlined in text:
+\newcommand{\codei}[1]{\bfseries \ttfamily{#1}\normalfont}
+
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+   
+    \null %empty box needed for vfill to work
+    \vfill
+
+   {\bfseries\Huge
+    Ranvec1
+    \vspacesmall
+    
+    Random number generator for 
+    \vspacesmall
+        
+    C++ vector class library 
+    \vspacebig
+        
+   }        
+    \vspacebig
+    
+   {\Large    
+    Agner Fog
+    \vspacebig
+    
+    \copyright\ \today. Apache license 2.0
+   }
+    
+    \vfill
+    
+    \includegraphics[width=306pt]{freesoftwarelogo.jpg}
+    \vfill
+    
+\end{titlepage}
+
+\RaggedRight
+
+\chapter{Introduction}\label{chap:Introduction}
+
+Ranvec1 is an efficient high quality pseudo random number generator designed for large vector applications and multi-threaded applications in C++ language.
+\vspacesmall
+
+This generator has been developed based on the following design goals:
+
+\begin{itemize}
+
+\item Good randomness, as determined by both theoretical and experimental criteria.
+
+\item Suitable for vector processors and vector instructions (SIMD).
+
+\item Suitable for large multi-threaded applications without risk of overlapping subsequences.
+
+\item Fast generation of large amounts of random numbers.
+
+\end{itemize}
+
+This random number generator is designed for large Monte Carlo simulations and Monte Carlo integration. 
+It may be useful for cryptographic applications as well, but cryptographic safety has not been a decisive design goal. It will be useful for game applications as well.
+\vspacesmall
+
+A physical random number generator function is included for the purpose of generating a truly random seed for initializing the pseudo random number generator.
+\vspacesmall
+
+The code is based on the Vector Class Library, using the x86 or x86-64 instruction set with extensions from SSE2 to AVX512. See the Vector Class Library manual for choice of compiler and compilation options. On Gnu and Clang compilers you need to specify the additional options \textbf{-mrdrnd -mrdseed} in order to enable the physical random number generator instructions.
+
+
+
+\chapter{Instructions}\label{chap:Instructions}
+\flushleft
+The files ranvec1.h and ranvec1.cpp define a high quality pseudo-random number generator with vector output. This generator is useful for producing random numbers for simulation and other Monte Carlo applications. Add the file ranvec1.cpp to your project and compile for the appropriate instruction set. This example shows a simple use of the random number generator:
+
+\begin{example}
+\label{exampleRandomGeneration}
+\end{example} % frame disappears if I put this after end lstlisting
+\begin{lstlisting}[frame=single]
+// Example for random number generator
+// Remember to link ranvec1.cpp into the project
+
+#include <stdio.h>
+#include "vectorclass.h"
+#include "ranvec1.h"
+
+int main() {
+    // Arbitrary seed
+    int seed = 1;
+    // Create an instance of Ranvec1 and set the type to 3
+    Ranvec1 ran(3);
+    // Initialize with the seed
+    ran.init(seed);
+    // Generate a vector of 8 random integers below 100
+    Vec8i ri = ran.random8i(0,99);
+    // Generate a vector of 8 random floats
+    Vec8f rf = ran.random8f();
+    int i;
+    // Output the 8 random integers
+    printf("\nRandom integers in interval 0 - 99\n");
+    for (i=0; i < ri.size(); i++) printf("%3i ", ri[i]);
+    
+    // Output the 8 random floats
+    printf("\nRandom floats in interval 0 - 1\n");
+    for (i=0; i < rf.size(); i++) printf("%7.4f ", rf[i]);
+    printf("\n");
+    return 0;
+}
+\end{lstlisting}
+\vspacesmall
+
+The optional parameter for the constructor of the class Ranvec1 defines the type of random number generator to use:
+\vspacesmall
+
+\begin{tabular}{|p{30mm}|p{120mm}|}
+\hline
+\bfseries Parameter for\newline constructor & \bfseries Generator type \\ \hline
+1 & MWC. Multiply-With-Carry Generator. Use this for small applications where speed is important. \newline
+(cycle length \textgreater{} $4 \cdot 10^{19}$) \\ \hline
+
+2 & MTGP. A variant of Mersenne Twister. Use this for applications with multiple threads. \newline
+(cycle length \textgreater{} $10^{3375}$) \\ \hline
+
+3 & MWC + MTGP combined. Use this for the best possible randomness and for large applications with many threads. \newline
+(cycle length \textgreater{} $10^{3395}$) \\ \hline
+\end{tabular}
+\vspacesmall
+
+It is necessary to initialize the random number generator with a seed, using either the function \codei{init} or \codei{initByArray}. The generator will produce only zeroes if it has not been initialized with any of the init functions.
+\vspacesmall
+
+The random number sequence depends on the seed. A different seed will produce a different sequence of random numbers. You can reproduce a random number sequence exactly after initializing again with the same seed. You may use simple values like 1, 2, 3, ... for seeds in a series of simulations if you want to be able to reproduce the results later. If you want a non-reproducible sequence then you need a seed from a source of genuine randomness. The function \codei{physicalSeed} is useful for this purpose.
+\vspacesmall
+
+The generator can produce vector outputs with different vector sizes. The best performance is obtained when the vector size fits the instruction set: SSE2 or higher for 128 bit vectors. AVX2 or higher for 256 bit vectors. AVX512 or higher for 512 bit vectors. Depending on details of the application, it may or may not be possible to reproduce a simulation result exactly when the vector size is changed.
+\vspacesmall
+
+The theory of the Ranvec1 package including the different generators, multiprocessing and vector processing is described in the article: 
+\label{Fog2015TheoryArticle}
+
+Fog, Agner: “Pseudo-Random Number Generators for Vector Processors and Multicore Processors.” Journal of Modern Applied Statistical Methods, vol. 14, no. 1, 2015, article 23. \url{https://digitalcommons.wayne.edu/jmasm/vol14/iss1/23/}
+\vspacebig
+
+\section{Member functions for class Ranvec1}\label{MemberFunctions}
+\vspacesmall
+
+\begin{tabular}{|p{30mm}|p{100mm}|}
+\hline
+\bfseries Constructor & Ranvec1(int gtype) \\ \hline
+\bfseries Description & Constructor for Ranvec1 class. See the table above for values of the generator type gtype. \\ \hline
+\bfseries Efficiency & medium \\ \hline
+\end{tabular}
+\begin{lstlisting}[frame=none]
+// Example:
+Ranvec1 ran(3);   // Create object ran
+\end{lstlisting}
+\vspacesmall
+
+\begin{tabular}{|p{30mm}|p{100mm}|}
+\hline
+\bfseries Member function & void init(int seed) \\ \hline
+\bfseries Description & Initialization with one seed. Any value is allowed for seed. Use a different value of seed each time to get a different random number sequence. \\ \hline
+\bfseries Efficiency & poor \\ \hline
+\end{tabular}
+\begin{lstlisting}[frame=none]
+// Example:
+ran.init(0);   // Initialize random generator with seed 0
+\end{lstlisting}
+\vspacesmall
+
+\begin{tabular}{|p{30mm}|p{100mm}|}
+\hline
+\bfseries Member function & void init(int seed1, int seed2) \\ \hline
+\bfseries Description & Initialization with two seeds. The random number sequence depends on both seeds. If the generator type is 3, then seed1 is used for the MWC generator and seed2 is used for the MTGP generator. The value of seed2 should be different for each thread in multithreaded applications. \\ \hline
+\bfseries Efficiency & poor \\ \hline
+\end{tabular}
+\begin{lstlisting}[frame=none]
+// Example:
+ran.init(0,1);   // Initialize random generator with seeds 0 and 1
+\end{lstlisting}
+\vspacesmall
+
+\begin{tabular}{|p{30mm}|p{100mm}|}
+\hline
+\bfseries Member function & void initByArray(int const seeds[], int numSeeds) \\ \hline
+\bfseries Description & Initialization with multiple seeds. The seeds array must contain numSeed integers. The random number sequence depends on all these integer seeds. This can be useful for security applications in order to make it difficult to guess the seeds. The best security is obtained with generator type 3. \\ \hline
+\bfseries Efficiency & poor \\ \hline
+\end{tabular}
+\begin{lstlisting}[frame=none]
+// Example:
+// Initialize random generator with four seeds
+int seeds[4] = {5,8,12,2};
+ran.initByArray(seeds, 4);  
+\end{lstlisting}
+\vspacesmall
+
+\begin{tabular}{|p{30mm}|p{100mm}|}
+\hline
+\bfseries Member function & uint32\_t random32b()\newline
+uint64\_t random64b() \\ \hline
+\bfseries Description & returns an integer of 32 or 64 random bits \\ \hline
+\bfseries Efficiency & medium \\ \hline
+\end{tabular}
+\begin{lstlisting}[frame=none]
+// Example:
+unsigned int r = ran.random32b();  // generate 32 random bits
+\end{lstlisting}
+\vspacesmall
+
+\begin{tabular}{|p{30mm}|p{100mm}|}
+\hline
+\bfseries Member function & Vec4ui random128b() \newline
+Vec8ui random256b() \newline
+Vec16ui random512b() \\ \hline
+\bfseries Description & Returns an integer vector of 128, 256 or 512 random bits.  \\ \hline
+\bfseries Efficiency & medium \\ \hline
+\end{tabular}
+\begin{lstlisting}[frame=none]
+// Example:
+Vec8ui v = ran.random256b();  // generate 256 random bits
+\end{lstlisting}
+\vspacesmall
+
+\begin{tabular}{|p{30mm}|p{100mm}|}
+\hline
+\bfseries Member function & int random1i(int min, int max) \newline
+Vec4i random4i(int min, int max) \newline
+Vec8i random8i(int min, int max) \newline
+Vec16i random16i(int min, int max) \\ \hline
+\bfseries Description & Returns a random integer or a vector of random integers
+with uniform distribution in the interval min $\leq$ x $\leq$ max. \newline
+(The distribution may be slightly inaccurate when the interval size is large and not a power of 2. See below for a more accurate version.) \\ \hline
+\bfseries Efficiency & medium \\ \hline
+\end{tabular}
+\begin{lstlisting}[frame=none]
+// Example:
+// Generate a random integer in the interval [1,10]
+int r = ran.random1i(1, 10);
+// Generate eight random integers in the interval [1,10]
+Vec8i v = ran.random8i(1, 10);
+\end{lstlisting}
+\vspacesmall
+
+
+\begin{tabular}{|p{30mm}|p{100mm}|}
+\hline
+\bfseries Member function & int random1ix(int min, int max) \newline
+Vec4i random4ix(int min, int max) \newline
+Vec8i random8ix(int min, int max) \newline
+Vec16i random16ix(int min, int max) \\ \hline
+\bfseries Description & Returns a random integer or a vector of random integers with uniform distribution in the interval min $\leq$ x $\leq$ max. \newline
+This is the same as random1i, random4i, random8i, random16i, but exact. \newline
+The exact version of these functions use a rejection method as described in the theory article mentioned above. To reproduce a sequence, the same function with the same vector size must be called. \\ \hline
+\bfseries Efficiency & medium \\ \hline
+\end{tabular}
+\begin{lstlisting}[frame=none]
+// Example:
+// Generate eight random integers in the interval [1,10]
+Vec8i v = ran.random8ix(1, 10);
+\end{lstlisting}
+\vspacesmall
+
+\begin{tabular}{|p{30mm}|p{100mm}|}
+\hline
+\bfseries Member function & float random1f() \\ \hline
+\bfseries Description & Returns a random floating point number with uniform distribution in the interval 0 $\leq$ x $<$ 1. The resolution is $2^{-24}$. \newline
+(A value in the interval 0 $<$ x $\leq$ 1 can be obtained as 1 - x. \\ \hline
+\bfseries Efficiency & medium \\ \hline
+\end{tabular}
+\begin{lstlisting}[frame=none]
+// Example:
+// Generate a random float below 100:
+float x = ran.random1f() * 100.f;
+\end{lstlisting}
+\vspacesmall
+
+\begin{tabular}{|p{30mm}|p{100mm}|}
+\hline
+\bfseries Member function & Vec4f random4f() \newline
+Vec8f random8f() \newline
+Vec16f random16f() \\ \hline
+\bfseries Description & Returns a vector of random floating point numbers with uniform distribution in the interval 0 $\leq$ x $<$ 1. The resolution is $2^{-24}$.  \\ \hline
+\bfseries Efficiency & medium \\ \hline
+\end{tabular}
+\begin{lstlisting}[frame=none]
+// Example:
+// Generate four random float numbers below 100:
+Vec4f v = ran.random4f() * 100.f;
+\end{lstlisting}
+\vspacesmall
+
+\begin{tabular}{|p{30mm}|p{100mm}|}
+\hline
+\bfseries Member function & double random1d() \\ \hline
+\bfseries Description & Returns a random double precision number with uniform distribution in the interval 0 $\leq$ x $<$ 1. The resolution is $2^{-52}$. \\ \hline
+\bfseries Efficiency & medium \\ \hline
+\end{tabular}
+\begin{lstlisting}[frame=none]
+// Example:
+// Generate random double precision number below 100:
+double x = ran.random1d() * 100.;
+\end{lstlisting}
+\vspacesmall
+
+\begin{tabular}{|p{30mm}|p{100mm}|}
+\hline
+\bfseries Member function & Vec2d random2d() \newline
+Vec4d random4d() \newline
+Vec8d random8d() \\ \hline
+\bfseries Description & Returns a vector of random double precision numbers with uniform distribution in the interval 0 $\leq$ x $<$ 1. The resolution is $2^{-52}$.  \\ \hline
+\bfseries Efficiency & medium \\ \hline
+\end{tabular}
+\begin{lstlisting}[frame=none]
+// Example:
+// Generate four random double precision numbers below 100:
+Vec4d v = ran.random4d() * 100.;
+\end{lstlisting}
+\vspacebig
+
+
+\section{Other functions}\label{OtherFunctions}
+
+\begin{tabular}{|p{30mm}|p{100mm}|}
+\hline
+\bfseries Function & int physicalSeedType()  \\ \hline
+\bfseries Description & Finds the best source of non-reproducible randomness on the CPU that the program is running on. Return value: \newline
+0:  No physical seed available \newline
+1:  CPU clock (consecutive calls are not independent)\newline
+2:  RDRAND instruction \newline
+3:  RDSEED instruction   \\ \hline
+\bfseries Efficiency & medium \\ \hline
+\end{tabular}
+\vspacebig
+
+\begin{tabular}{|p{30mm}|p{100mm}|}
+\hline
+\bfseries Function & int physicalSeed()  \\ \hline
+\bfseries Description & Get a non-reproducible random number based on a physical process. This is intended as a seed for the pseudo random number generator. The source of randomness is indicated by physicalSeedType();  \\ \hline
+\bfseries Efficiency & medium \\ \hline
+\end{tabular}
+\begin{lstlisting}[frame=none]
+// Example: Generate a random seed
+int seed = physicalSeed();
+// Make an instance of the pseudo random number generator
+Ranvec1 ran(2);
+// Initialize it with the random seed
+ran.init(seed);
+// Generate a vector of 16 random float numbers
+Vec16f rf = ran.random16f();
+// This code will generate a different random sequence each
+// time it runs.
+\end{lstlisting}
+\vspacebig
+
+
+\section{Generating seeds}\label{GeneratingSeeds}
+
+Ranvec1 is called a pseudo random number generator because it is deterministic. You can repeat the same sequence of random numbers if you run it again with the same seed. 
+You need to initialize Ranvec1 with a random seed if you want a sequence of random numbers that is not predictable or deterministic.
+\vspacesmall
+
+The \codei{physicalSeed()} function will produce such a random seed.
+Newer CPUs have a built-in physical source of randomness based on thermal noise. This is implemented in the RDRAND or RDSEED instruction. The RDSEED instruction is stronger than RDRAND if you want to call it multiple times to get a longer seed. The \codei{physicalSeed()} function will use the best source of randomness available on the CPU it is running on.
+\vspacesmall
+
+If the program is running on and older CPU without the RDRAND or RDSEED instruction, then you can use the internal CPU clock as a source of randomness. The frequency of this internal clock is typically higher than 1 GHz. The source of randomness here is the exact time at which the function is called.
+\vspacesmall
+
+Note that if you are calling \codei{physicalSeed()} twice on an older computer where the CPU clock is the only source of randomness, then the second call will not be independent of the first one. It will give a value that is perhaps a few hundred clock counts higher than the first one. To get an independent second value you need to wait for some external event before the second call. This external event can be a keystroke, a mouse move, or a network event. If the function \codei{physicalSeedType()} returns 1 then you need to wait for an external event before every call to \codei{physicalSeed()} except the first one. For example, you may ask the user to press a key. 
+\vspacesmall 
+
+
+\section{Cryptographic applications}\label{CryptographicApplications}
+It is theoretically possible to predict and reproduce the sequence generated by a single pseudo random number generator if you have access to a subsequence longer than the internal state buffer. This is not possible if two random number generators with long cycle lengths are combined. Therefore, you should always use the combined generator (type 3) for cryptographic applications. 
+\vspacesmall
+
+You should use a seed longer than 32 bits to get a good unpredictable result. Use the \codei{initByArray} function with an array of multiple seeds. Use two or more array elements generated by the \codei{physicalSeed()} function and supply with other elements from other sources. These other elements do not need to be truly random; they may include date and time, a hash of the user name or password, or any other data. The resulting random number sequence depends on all the elements in the seeds array. The resulting sequence will be unpredictable as long as at least one element of the seeds array is truly unpredictable. Combining seeds from multiple sources makes it more difficult for an attacker to break the security.
+\vspacesmall
+
+
+\section{Game applications}\label{GameApplications}
+The source of randomness does not need to be highly secure for entertainment games. A single seed from the \codei{physicalSeed()} function will provide sufficient randomness. 
+\vspacesmall
+
+
+\section{Gambling applications}\label{GamblingApplications}
+Gambling is a morally dubious exploitation of well-known weaknesses in the human psyche for financial gain, in my opinion. I do not endorse the use of this software in gambling applications.
+\vspacesmall
+
+
+\section{Monte Carlo simulation}\label{MonteCarloSimulation}
+Monte Carlo simulation and Monte Carlo integration are computational techniques that require a very long sequence of random numbers. The Ranvec1 generator was designed to be well suited for this purpose. 
+\vspacesmall
+
+You do not need truly unpredictable randomness for Monte Carlo applications. On the contrary, it is an advantage to have a deterministic sequence so that it is possible to re-play a particular simulation in case of an interesting event that you want to analyze further. It is quite convenient to use consecutive seeds such as 1, 2, 3, ... for a series of simulation runs.
+\vspacesmall
+
+
+\section{Multi-threaded applications}\label{MultiThreadedApplications}
+The Ranvec1 generator is designed to be suitable for large multi-threaded applications.
+You can take advantage of the multiple CPU cores in modern computers by running multiple threads simultaneously in time-consuming applications. The number of threads should not be more than the number of CPU cores. Some microprocessors are able to run two or more threads in each core, but these threads are likely to be competing for the same resources, so it may not be efficient to run more threads than CPU cores in this case.
+\vspacesmall
+
+It is not safe to access a pseudo random number generator from multiple threads simultaneously. Instead, you need to make one instance of Ranvec1 for each thread. Each instance should have a different seed. It is recommended to use the combined generator (type 3) with two seeds. The second seed, or both seeds, should be different for each thread. The theoretical reasons for this is explained in the theory article cited on page \pageref{Fog2015TheoryArticle}.
+
+
+\end{document}

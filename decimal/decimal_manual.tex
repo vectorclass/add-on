@@ -1,0 +1,321 @@
+\documentclass[11pt,a4paper,oneside,openright]{report}
+
+\usepackage[bindingoffset=5mm,left=20mm,right=20mm,top=20mm,bottom=20mm,footskip=10mm]{geometry}
+\usepackage[utf8x]{inputenc}
+\usepackage{hyperref}
+\usepackage[english]{babel}
+\usepackage{listings}
+\usepackage{subfiles}
+\usepackage{longtable}
+\usepackage{multirow}
+\usepackage{ragged2e} 
+\usepackage{cmap} % avoid fi ligatures in pdf file
+\usepackage{amsthm} % example numbering
+\usepackage{color}
+%\usepackage{bold-extra} % for bold tt font. Remember to include bold-extra.sty file
+\usepackage{graphicx}
+\usepackage[yyyymmdd]{datetime}
+\usepackage{float}
+
+% style for code listing
+\renewcommand{\familydefault}{\sfdefault}
+\newtheorem{example}{Example}[chapter]  % example numbering
+\lstset{language=C}                     % formatting for code listing
+\lstset{basicstyle=\ttfamily,breaklines=true}
+\definecolor{darkGreen}{rgb}{0,0.4,0}
+\definecolor{mybrown}{rgb}{0.40,0.10,0.05}
+\lstset{commentstyle=\color{darkGreen}}  % comments color
+\lstset{keywordstyle=\color{blue}}       % keyword color
+\lstset{stringstyle=\color{mybrown}}     % string color
+\lstset{showstringspaces=false}          % don't mark spaces in strings
+
+\renewcommand{\dateseparator}{-}
+
+% command for turning indent back on after \flushleft
+\newcommand{\indenton}{\RaggedRight\parindent=15pt}
+
+% command for vertical space
+\newcommand{\vspacesmall}{\vspace{3mm}}
+\newcommand{\vspacebig}{\vspace{6mm}}
+
+% style for code inlined in text:
+\newcommand{\codei}[1]{\bfseries \ttfamily{#1}\normalfont}
+
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+   
+    \null %empty box needed for vfill to work
+    \vfill
+
+   {\bfseries\Huge
+    decimal.cpp
+    \vspacesmall
+    
+    Functions for conversion of integer vectors to and from
+    comma-separated lists of   
+    decimal ASCII numbers
+    \vspacesmall
+        
+    Extension to C++ vector class library 
+    \vspacebig
+        
+   }        
+    \vspacebig
+    
+   {\Large    
+    Agner Fog
+    \vspacebig
+    
+    \copyright\ \today. Apache license 2.0
+   }
+    
+    \vfill
+    
+    \includegraphics[width=306pt]{freesoftwarelogo.jpg}
+    \vfill
+    
+\end{titlepage}
+
+\RaggedRight
+
+\chapter{Introduction}\label{chap:Introduction}
+The decimal ASCII extension to the Vector Class Library contains functions for conversion of integer vectors to and from comma-separated lists of numbers as human-readable decimal ASCII strings. This is useful for efficient reading and writing of comma-separated files.
+\vspacesmall
+
+These functions cannot read or write floating point numbers. If you have fractional numbers, then you may consider if the numbers can be converted to integers by appropriate scaling. For example, if your have dollars with two decimals, then you can multiply the numbers by 100 to get cents as integer numbers. This will make data handling faster.
+\vspacesmall
+
+These functions are highly efficient. Whether this efficiency actually shows in the overall program performance depends on whether string processing is a bottleneck. In many applications, the transfer of data files is the limiting bottleneck, rather than string processing. 
+\vspacesmall
+
+Anyway, the code presented here can serve as an interesting show case. The code illustrates how strings can be processed or parsed in parallel using vector instructions in a highly efficient way. The ascii2bin function shows that it is possible to parse a string with variable-length fields without looping through the characters of the string.
+\vspacesmall
+
+
+\section{Compiling} \label{Compiling}
+The decimal extension to the Vector Class Library consists of the files decimal.cpp and decimal.h. The decimal.cpp file is added to the project that needs it, and the decimal.h file is \#included in C++ files that call these functions.
+\vspacesmall
+
+The decimal extension to the Vector Class Library is compiled in the same way as the Vector Class Library itself. All x86 and x86-64 platforms are supported, including Windows, Linux, and Mac OS. 
+The following C++ compilers can be used: Gnu, Clang, Microsoft, and Intel. 
+See the manual for the vector class library for further details.
+
+
+\chapter{Binary to decimal ASCII conversion}\label{chap:b2aConversion}
+
+The bin2ascii function has the following parameters:
+
+\begin {table}[H]
+\caption{bin2ascii function}
+\label{table:bin2asciiFunction}
+\begin{tabular}{|p{24mm}|p{130mm}|}
+\hline
+\bfseries Parameter & \bfseries Description \\ \hline
+Vec4i a \newline Vec8i a & A vector of four or eight signed or unsigned integers.
+ \\ \hline
+char * string & This char array will receive the ASCII string of decimal numbers. It is the responsibility of the programmer that the array is big enough to contain the resulting string, even in case of overflow. \\ \hline
+int fieldlen & Desired length of each field in the output list. \\ \hline
+int numdat & Number of data fields to write. The maximum value is 4 or 8 for Vec4i and Vec8i, respectively. \\ \hline
+char ovfl & This ASCII character will indicate overflow if a number is too big to fit into a field of size \codei{fieldlen}. The default value is '*'. The field will be extended to fit the number if \codei{ovfl} is set to 0 (without quotes). \\ \hline
+char separator & This ASCII character will be used as separater between the number fields. The default value is ','. No separator will be used if  \codei{separator} is set to 0 (without quotes). \\ \hline
+bool signd & Set this to \codei{true} (default) to write signed numbers. Set to \codei{false} if the input vector should be interpreted as unsigned numbers. \\  \hline
+bool term & Indicates whether the written ASCII string string should be zero-terminated. The default is true. A terminating zero will not be written if \codei{term} is false. \\ \hline
+Return value & The bin2ascii function returns the length of the written string. \\ \hline
+\end{tabular}
+\end{table}
+\vspacebig
+
+
+This example shows how to use the bin2ascii function:
+
+\begin{example}
+\label{example1}
+\end{example} % frame disappears if I put this after end lstlisting
+\begin{lstlisting}[frame=single]
+// Example for binary to decimal ASCII conversion
+#include <stdio.h>
+#include "vectorclass.h"        
+#include "decimal.h" 
+#include "decimal.cpp"
+
+int main() {
+    // make a vector of eight integers
+    Vec8i a(1, 20, 300, 4000, -12345, 67890, 1234567890, 8);
+    // make a char array big enough to hold the string
+    char text[100];
+    // convert to human-readable decimal ASCII numbers
+    bin2ascii(a, text, 6, 8, '*', ',', true, true);
+    // print text
+    printf("List of numbers:\n%s\n", text);
+    return 0;
+}
+/* The output will be:
+List of numbers:
+     1,    20,   300,  4000,-12345, 67890,******,     8
+*/    
+
+\end{lstlisting}
+\vspacesmall
+
+
+
+\chapter{Decimal ASCII to binary conversion}\label{chap:a2bConversion}
+
+The ascii2bin function has the following parameters:
+
+\begin {table}[H]
+\caption{ascii2bin function}
+\label{table:ascii2binFunction}
+\begin{tabular}{|p{32mm}|p{120mm}|}
+\hline
+\bfseries Parameter & \bfseries Description \\ \hline
+const char * string & An ASCII string containing integer numbers separated by comma or by some other separator character. \\ \hline
+int * chars\_read & This parameter will receive the number of characters that the function has read. In other words, the part of the string that has been used by the function. \\ \hline
+int * error & This parameter will receive an indication of any errors. The error codes are listed below. \\ \hline
+int max\_stringlen & The maximum length of the string that the function is allowed to read. Any contents after max\_stringlen will be ignored.
+The string may be shorter than max\_stringlen if terminated by a zero or newline. \\ \hline
+int numdat & The number of data fields to read. The maximum value is 8. \\ \hline
+char separator & The character used as separator between numbers. The default is ',' \\ \hline
+Return value & The function returns a vector of type Vec8i, containing up to eight signed integers. \\ \hline
+\end{tabular}
+\end{table}
+\vspacesmall
+
+The input string must be an ASCII string using the following syntax.
+The string can contain up to eight fields, each containing a signed or unsigned integer. The fields are separated by the character indicated as \codei{separator}. The default separator is a comma. Each field can contain an optional sign (\codei{+} or \codei{-}) followed by any number of digits 0 - 9. Spaces are allowed before and after the number, and between the sign and the number. No other characters are allowed. Nothing is allowed between the digits.
+\vspacesmall
+
+A separator (comma) after the last field is not required, but it can be useful to prevent the function from reading any irrelevant text that comes after the relevant fields, which would cause syntax errors. A terminating separator will be included in \codei{chars\_read}.
+\vspacesmall
+
+The following error codes are returned in \codei{*error} in case of syntax errors in the string:
+
+\begin {table}[H]
+\caption{ascii2bin error codes}
+\label{table:ascii2binErrorCodes}
+\begin{tabular}{|p{24mm}|p{130mm}|}
+\hline
+\bfseries Error code & \bfseries Description \\ \hline
+1 & Parameters out of range. This happens if numdat \textgreater{} 8 or max\_stringlen \textgreater{} 10000.  \\ \hline
+2 & Illegal character. This happens if a numeric field contains any other characters than +, -, 0-9, or space. The value will be interpreted as if the illegal character was a space, if possible. \\ \hline
+4 & Misplaced character. This happens if a + or - sign is placed after the number rather than before the number, or if there is anything between the digits. \newline The resulting value will be zero. \\ \hline
+8 & Too few separators. The string has less than \codei{numdat-1} separators. The remaining values will be zero. \\ \hline
+16 & Overflow. A value is too big to fit into a 32-bit signed integer. The resulting value will be INT\_MAX or INT\_MIN. \\ \hline
+0 & Missing value. An empty field will be interpreted as a zero. This is not indicated as an error. \\ \hline
+\end{tabular}
+\end{table}
+
+The error codes can be combined if the string has multiple syntax errors.
+
+\vspacesmall
+Any control characters in the string, such as newline or tab, will be interpreted as end of string, unless the same character is indicated as separator. A Windows newline cannot be used as separator because it consists of two control characters (\textbackslash r\textbackslash n).
+\vspacebig
+
+This example shows how to use the ascii2bin function:
+
+\begin{example}
+\label{example2}
+\end{example} % frame disappears if I put this after end lstlisting
+\begin{lstlisting}[frame=single]
+// Example for conversion from comma-separated decimal ASCII 
+// string to binary vector
+#include <stdio.h>
+#include "vectorclass.h"        
+#include "decimal.h" 
+#include "decimal.cpp"
+
+int main() {
+    // text string to interpret
+    char text[] = " 1, -20, 30, , 555, -6, 7000, 88888  ";
+
+    // length and error will be returned in these variables
+    int length, error;
+
+    // interpret the comma-separated string
+    Vec8i dat = ascii2bin(text, &length, &error, 64, 8, ',');
+
+    // check if syntax error
+    if (error) {    
+        printf ("\nerror = 0x%X",error);
+    }
+    else {
+        // write results
+        for (int i = 0; i < 8; i++) {
+            printf("%i ", dat[i]);
+        }
+    }
+    return 0;
+}
+// Program output:
+// 1 -20 30 0 555 -6 7000 88888
+\end{lstlisting}
+\vspacesmall
+
+
+The \codei{chars\_read} variable tells where to begin the next read if the string or line contains more than eight numbers. This is illustrated in the next example:
+
+\begin{example}
+\label{example3}
+\end{example} % frame disappears if I put this after end lstlisting
+\begin{lstlisting}[frame=single]
+// Example for converting a comma-separated decimal ASCII 
+// string containing more than eight numbers
+#include <stdio.h>
+#include "vectorclass.h"        
+#include "decimal.h" 
+#include "decimal.cpp"
+
+int main() {
+    // text string containing twelve numbers
+    char text[] = " 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37";
+
+    // length and error will be returned in these variables
+    int length1, length2, error;
+
+    // data vectors of eight integers each
+    Vec8i dat1, dat2;
+
+    // read first eight numbers
+    dat1 = ascii2bin(text, &length1, &error, 64, 8, ',');
+
+    // check if syntax error
+    if (!error) {
+        // read the next four numbers
+        dat2 = 
+        ascii2bin(text + length1, &length2, &error, 64, 4, ',');
+    }
+
+    // check if syntax error
+    if (error) {    
+        printf ("\nerror 0x%X",error);
+    }
+    else {
+        // join the two data vectors
+        Vec16i dat12(dat1, dat2);
+
+        // write results
+        for (int i = 0; i < 12; i++) {
+            printf("%i ", dat12[i]);
+        }
+    }
+    return 0;
+}
+\end{lstlisting}
+\vspacesmall
+
+
+\section{Efficiency} \label{Efficiency}
+
+The ascii2bin function can be highly efficient. The performance is highest if the following conditions are satisfied:
+
+\begin{itemize}
+  \item The input string is no more than 64 characters long
+  \item No number is more than 8 characters long, including sign
+  \item The code is compiled for the highest instruction set supported by the CPU it is running on. The following instruction set extensions give particular advantage: AVX2, AVX512BW, and the future AVX512VBMI2\end{itemize}
+\vspacesmall
+
+
+\end{document}

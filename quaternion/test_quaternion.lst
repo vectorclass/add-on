@@ -1,0 +1,20 @@
+# Test data for quaternion.h under VCL
+# Use with runtest.sh from testbench repository
+
+$compiler=1
+$mode=64
+$testbench=testbench_quaternion.cpp
+$include=./
+$outfile=q.txt
+$seed=1
+
+
+# test case, vector type, return type, instruction set
+
+# operators and functions
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 , Quaternion1f Quaternion1d , , 2 6 7 8 9 10
+
+# constructors etc
+20 21 25 26 27 28  , Quaternion1f Quaternion1d , , 3 5 7 8 9 10
+22  , Quaternion1f , , 4 7 8 9 10
+23  , Quaternion1d , , 3 7 8 9 10

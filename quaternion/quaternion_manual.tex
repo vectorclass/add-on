@@ -1,0 +1,536 @@
+\documentclass[11pt,a4paper,oneside,openright]{report}
+
+\usepackage[bindingoffset=5mm,left=20mm,right=20mm,top=20mm,bottom=20mm,footskip=10mm]{geometry}
+\usepackage[utf8x]{inputenc}
+\usepackage{hyperref}
+\usepackage[english]{babel}
+\usepackage{listings}
+\usepackage{subfiles}
+\usepackage{longtable}
+\usepackage{multirow}
+\usepackage{ragged2e} 
+\usepackage{cmap} % avoid fi ligatures in pdf file
+\usepackage{amsthm} % example numbering
+\usepackage{color}
+%\usepackage{bold-extra} % for bold tt font. Remember to include bold-extra.sty file
+\usepackage{graphicx}
+\usepackage[yyyymmdd]{datetime}
+\usepackage{float}
+
+% style for code listing
+\renewcommand{\familydefault}{\sfdefault}
+\newtheorem{example}{Example}[chapter]  % example numbering
+\lstset{language=C}                     % formatting for code listing
+\lstset{basicstyle=\ttfamily,breaklines=true}
+\definecolor{darkGreen}{rgb}{0,0.4,0}
+\definecolor{mybrown}{rgb}{0.40,0.10,0.05}
+\lstset{commentstyle=\color{darkGreen}}  % comments color
+\lstset{keywordstyle=\color{blue}}       % keyword color
+\lstset{stringstyle=\color{mybrown}}     % string color
+\lstset{showstringspaces=false}          % don't mark spaces in strings
+
+\renewcommand{\dateseparator}{-}
+
+% command for turning indent back on after \flushleft
+\newcommand{\indenton}{\RaggedRight\parindent=15pt}
+
+% command for vertical space
+\newcommand{\vspacesmall}{\vspace{3mm}}
+\newcommand{\vspacebig}{\vspace{6mm}}
+
+% style for code inlined in text:
+\newcommand{\codei}[1]{\bfseries \ttfamily{#1}\normalfont}
+
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+   
+    \null %empty box needed for vfill to work
+    \vfill
+
+   {\bfseries\Huge
+    Quaternion.h
+    \vspacesmall
+    
+    Quaternion extension for 
+    \vspacesmall
+        
+    C++ vector class library 
+    \vspacebig
+        
+   }        
+    \vspacebig
+    
+   {\Large    
+    Agner Fog
+    \vspacebig
+    
+    \copyright\ \today. Apache license 2.0
+   }
+    
+    \vfill
+    
+    \includegraphics[width=306pt]{freesoftwarelogo.jpg}
+    \vfill
+    
+\end{titlepage}
+
+\RaggedRight
+
+\chapter{Introduction}\label{chap:Introduction}
+Quaternions or hypercomplex numbers is a topic in theoretical algebra and quantum physics. Applications relating to 3-D geometry and electromagnetism are better served with the vector3d package to VCL.
+\vspacesmall
+
+The file quaternion.h provides classes, operators, and functions for 
+calculations with quaternions. This is an extension to the Vector Class Library.
+\vspacesmall
+
+The classes listed below are defined. Common operators and functions are defined for these classes:
+
+\begin {table}[H]
+\caption{Quaternion classes}
+\label{table:QuaternionClasses}
+\begin{tabular}{|p{24mm}|p{20mm}|p{20mm}|p{22mm}|p{20mm}|p{28mm}|}
+\hline
+\bfseries Quaternion class & \bfseries Precision &  \bfseries Quaternion elements per vector & \bfseries Correspon-ding real vector class & \bfseries Total bits & \bfseries Recommended minimum \newline instruction set \\ \hline
+Quaternion1f  & \centering single & \centering  1 & \centering Vec4f & \centering 128 & SSE2 \\ \hline
+Quaternion1d  & \centering double & \centering 1 & \centering Vec4d & \centering 256 & AVX \\ \hline
+\end{tabular}
+\end{table}
+\vspacebig
+
+
+
+\section{Compiling} \label{Compiling}
+The quaternion class extension to the Vector Class Library is compiled in the same way as the Vector Class Library itself. All x86 and x86-64 platforms are supported, including Windows, Linux, and Mac OS. 
+The following C++ compilers can be used: Gnu, Clang, Microsoft, and Intel. 
+See the Vector class library manual for further details.
+\vspacesmall
+
+This example shows how to use the quaternion classes:
+
+\begin{example}
+\label{example1}
+\end{example} % frame disappears if I put this after end lstlisting
+\begin{lstlisting}[frame=single]
+// Example for quaternions
+#include <stdio.h>
+#include "vectorclass.h"  // vector class library
+#include "quaternion.h"   // quaternion extension
+
+// function to print quaternion
+template <typename Q>
+void printqx (const char * text, Q a) {
+    auto aa = a.to_vector(); // get elements as real vector
+    printf("\n%s ", text);   // print text
+    printf("(%.3G,%.3G,%.3G,%.3G)", aa[0], aa[1], aa[2], aa[3]);
+}
+
+int main() {
+    // define quaternions
+    Quaternion1d a(1,2,3,4);   //  1 + 2*i + 3*j + 4*k
+    Quaternion1d b(2,-3,-1,0); //  2 - 3*i - 1*j + 0*k
+    Quaternion1d c = a + b;    // add quaternions
+    Quaternion1d d = a * b;    // multiply quaternions
+
+    // print results
+    printqx("a = ", a);        // a = (1,2,3,4)
+    printqx("b = ", b);        // b = (2,-3,-1,0)
+    printqx("c = ", c);        // c = (3,-1,2,4)
+    printqx("d = ", d);        // d = (11,5,-7,15)
+}
+
+\end{lstlisting}
+\vspacesmall
+
+
+\chapter{Constructing quaternions and loading data} 
+\label{ConstructingQuaternions}
+
+There are several ways to create quaternions and put data into them. These methods are listed here.
+\vspacebig
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Method & default constructor \\ \hline
+\bfseries Defined for & all quaternion classes \\ \hline
+\bfseries Description & the quaternion is created but not initialized.\newline
+The value is unpredictable \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+quaternion1f a;    // creates a quaternion of four floats
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Method & Construct from single real \\ \hline
+\bfseries Defined for & all quaternion classes \\ \hline
+\bfseries Description & The parameter defines the real part. The imaginary parts are zero. \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+quaternion1d a(3);  // a = (3,0,0,0)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Method & Construct from one real and three imaginary parts \\ \hline
+\bfseries Defined for & all quaternion classes \\ \hline
+\bfseries Description & The parameters define the real and imaginary parts  \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+quaternion1d a(1,2,3,4);  // a = (1,2,3,4)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Method & Construct from two complex numbers \\ \hline
+\bfseries Defined for & all quaternion classes \\ \hline
+\bfseries Description & The second parameter is post-multiplied by j \\ \hline
+\bfseries Efficiency & good \\ \hline
+\bfseries Implementation & complexvec1.h must be included before quaternion.h \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Complex1d a(1,2);    // a = 1 + i*2
+Complex1d b(3,4);    // b = 3 + i*4
+Quaternion1d c(a,b); // c = a + b*j = 1 + i*2 + j*3 + k*4
+\end{lstlisting}
+\vspacebig
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Method & member function load(p) \\ \hline
+\bfseries Defined for & all quaternion classes \\ \hline
+\bfseries Description & Load data from array of same precision. 
+Each real part must be followed by the corresponding three imaginary parts. \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+double a[4] = {1,2,3,4};
+Quaternion1d b;
+b.load(a);  // b = (1,2,3,4)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Method & member function store(p) \\ \hline
+\bfseries Defined for & all quaternion classes \\ \hline
+\bfseries Description & Save data into array of same precision. 
+Each real part is followed by the corresponding three imaginary parts. \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+float a[4];
+Quaternion1f b(1,2,3,4);
+b.store(a);  // a = {1,2,3,4}
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Method & member function real() \\ \hline
+\bfseries Defined for & all quaternion classes \\ \hline
+\bfseries Description & Get real part of quaternion \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Quaternion1d a(1,2,3,4);
+double r = a.real();  // a = 1
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Method & member function imag() \\ \hline
+\bfseries Defined for & all quaternion classes \\ \hline
+\bfseries Description & Get imaginary parts of quaternion. The real part is set to zero \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Quaternion1d a(1,2,3,4);
+Quaternion1d im = a.imag();  // a = (0,2,3,4)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Method & member function get\_low() \\ \hline
+\bfseries Defined for & all quaternion classes \\ \hline
+\bfseries Description & Get the real and the first imaginary part (i) as a complex vector \\ \hline
+\bfseries Efficiency & good \\ \hline
+\bfseries Implementation & complexvec1.h must be included before quaternion.h \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Quaternion1d a(1,2,3,4);
+Complex1d b = a.get_low();  // b = (1,2)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Method & member function get\_high() \\ \hline
+\bfseries Defined for & all quaternion classes \\ \hline
+\bfseries Description & Get the last two imaginary parts (j and k) as a complex vector \\ \hline
+\bfseries Efficiency & good \\ \hline
+\bfseries Implementation & complexvec1.h must be included before quaternion.h \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Quaternion1d a(1,2,3,4);
+Complex1d b = a.get_low();  // b = (1,2)
+Complex1d c = a.get_high(); // c = (3,4)
+Quaternion1d d(b,c);        // d = (1,2,3,4)
+\end{lstlisting}
+\vspacebig
+
+
+
+\chapter{Operators}\label{chap:Operators}
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Operator & + \\ \hline
+\bfseries Defined for & all quaternion classes  \\ \hline
+\bfseries Description & Add two quaternions, or one quaternion and one real scalar of the same precision \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Quaternion1d a(1,2,3,4);
+Quaternion1d b(5,6,7,8);
+Quaternion1d c = a + b;    // c = (6,8,10,12)
+Quaternion1d d = a + 10.0; // d = (11,2,3,4)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Operator & - \\ \hline
+\bfseries Defined for & all quaternion classes  \\ \hline
+\bfseries Description & Subtract two quaternions, or one quaternion and one real scalar of the same precision \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Quaternion1d a(12,11,10,9);
+Quaternion1d b(5,6,7,8);
+Quaternion1d c = a - b;    // c = (7,5,3,1)
+Quaternion1d d = a - 10.0; // d = (2,11,10,9)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Operator & * \\ \hline
+\bfseries Defined for & all quaternion classes  \\ \hline
+\bfseries Description & Multiply two quaternions, or one quaternion and one real scalar of the same precision. \newline 
+Multiplication of quaternions is not commutative, i.e. a*b and b*a are not the same.
+\\ \hline
+\bfseries Efficiency & medium \\ \hline
+\bfseries Accuracy & Quaternion multiplication involves the calculation of sums of products. Loss of precision may occur if the result is close to zero. \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Quaternion1d a(1,2,3,4);
+Quaternion1d b(5,6,7,8);
+Quaternion1d c = a * b;    // c = (-60,12,30,24)
+Quaternion1d d = b * a;    // d = (-60,20,14,32)
+Quaternion1d e = a * 10.;  // e = (10,20,30,40)
+
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Operator & / \\ \hline
+\bfseries Defined for & all quaternion classes  \\ \hline
+\bfseries Description & Divide two quaternions, or one quaternion and one real scalar of the same precision. \newline
+Division is defined as a / b = a * reciprocal(b) \\ \hline
+\bfseries Efficiency & medium \\ \hline
+\bfseries Accuracy & Quaternion division involves the calculation of sums of products. Loss of precision may occur if the result is close to zero. \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Quaternion1f a(7,9,-1,7);
+Quaternion1f b(1,2,3,2);
+Quaternion1f c = a / b;    // c = (2,1,-1,-2)
+Quaternion1f d = c * b;    // d = (7,9,-1,7)
+Quaternion1f e = b / 2.0f; // e = (0.5,1,1.5,1)
+Quaternion1f f = 18.f / b; // f = (1,-2,-3,-2)
+Quaternion1f g = f * b;    // g = (18,0,0,0)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Operator & $\sim$ \\ \hline
+\bfseries Defined for & all quaternion classes  \\ \hline
+\bfseries Description & Complex conjugate. The signs of the imaginary parts are inverted \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Quaternion1f a(1,2,3,4);
+Quaternion1f b = ~ a;    // b = (1,-2,-3,-4)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Operator & == \\ \hline
+\bfseries Defined for & all quaternion classes  \\ \hline
+\bfseries Description & Compare for equality.\newline
+The result is a boolean scalar. \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Quaternion1f a(1, 2,3,4);
+Quaternion1f b(1,-2,3,4);
+bool         c = (a == b);  // c = false
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Operator & != \\ \hline
+\bfseries Defined for & all quaternion classes  \\ \hline
+\bfseries Description & Compare for not equal.\newline
+The result is a boolean scalar. \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Quaternion1f a(1, 2,3,4);
+Quaternion1f b(1,-2,3,4);
+bool         c = (a != b);  // c = true
+\end{lstlisting}
+\vspacebig
+
+
+\chapter{Mathematical functions}\label{chap:MathematicalFunctions}
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Function & abs \\ \hline
+\bfseries Defined for & all quaternion classes  \\ \hline
+\bfseries Description & Gives the norm as a scalar \\ \hline
+\bfseries Efficiency & medium \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Quaternion1f a(2,1,0,2);
+double       b = abs(a); // b = 3
+\end{lstlisting}
+\vspacebig
+
+
+
+\chapter{Other functions}\label{chap:OtherFunctions}
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Function & to\_vector \\ \hline
+\bfseries Defined for & all quaternion classes \\ \hline
+\bfseries Description & Convert to a vector of the real part and the three imaginary parts. \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Quaternion1d a(1,2,3,4);
+Vec4d        b = a.to_vector(); // b = (1,2,3,4)
+\end{lstlisting}
+\vspacebig
+
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Function & select \\ \hline
+\bfseries Defined for & all quaternion classes  \\ \hline
+\bfseries Description & Choose between two quaternions. \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Quaternion1d a(1,2,3,4);
+Quaternion1d b(5,6,7,8);
+Quaternion1d c = select(true,a,b);  // c = (1,2,3,4)
+Quaternion1d d = select(false,a,b); // d = (5,6,7,8)
+\end{lstlisting}
+\vspacebig
+
+
+\end{document}

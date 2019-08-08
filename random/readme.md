@@ -18,8 +18,9 @@ Ranvec1 is an efficient high quality pseudo random number generator designed for
 
 **File list:**
 * ranvec1_manual.pdf: Instructions manual
-* ranvec1.cpp: C++ code
 * ranvec1.h: C++ header file
+* ranvec1.cpp: C++ code for random number generator
+* physseed.cpp: Generator of nondeterministic seed through physical process
 * test_ranvec.cpp: test program
 * ranvec1_manual.tex: Source for ranvec1_manual.pdf
 * freesoftwarelogo.jpg: Used by ranvec1_manual.tex

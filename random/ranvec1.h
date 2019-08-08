@@ -1,8 +1,8 @@
 /****************************  ranvec1.h   ********************************
 * Author:        Agner Fog
 * Date created:  2014-09-09
-* Last modified: 2019-07-08
-* Version:       2.00
+* Last modified: 2019-08-08
+* Version:       2.01
 * Project:       add-on package for vector class library
 * Description:
 * Pseudo random number generators with vector output, header file.
@@ -86,7 +86,7 @@
 ******************************************************************************/
 
 #ifndef RANVEC1_H
-#define RANVEC1_H  200
+#define RANVEC1_H  201
 
 #include "vectorclass.h"
 

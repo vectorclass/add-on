@@ -368,6 +368,7 @@ Vec4d v = ran.random4d() * 100.;
 1:  CPU clock (consecutive calls are not independent)\newline
 2:  RDRAND instruction \newline
 3:  RDSEED instruction   \\ \hline
+\bfseries Source file & physseed.cpp \\ \hline
 \bfseries Efficiency & medium \\ \hline
 \end{tabular}
 \vspacebig
@@ -376,6 +377,7 @@ Vec4d v = ran.random4d() * 100.;
 \hline
 \bfseries Function & int physicalSeed()  \\ \hline
 \bfseries Description & Get a non-reproducible random number based on a physical process. This is intended as a seed for the pseudo random number generator. The source of randomness is indicated by physicalSeedType();  \\ \hline
+\bfseries Source file & physseed.cpp \\ \hline
 \bfseries Efficiency & medium \\ \hline
 \end{tabular}
 \begin{lstlisting}[frame=none]
@@ -438,10 +440,101 @@ You do not need truly unpredictable randomness for Monte Carlo applications. On 
 
 \section{Multi-threaded applications}\label{MultiThreadedApplications}
 The Ranvec1 generator is designed to be suitable for large multi-threaded applications.
-You can take advantage of the multiple CPU cores in modern computers by running multiple threads simultaneously in time-consuming applications. The number of threads should not be more than the number of CPU cores. Some microprocessors are able to run two or more threads in each core, but these threads are likely to be competing for the same resources, so it may not be efficient to run more threads than CPU cores in this case.
+You can take advantage of the multiple CPU cores in modern computers by running multiple threads simultaneously in time-consuming applications. The number of threads should not be more than the number of CPU cores. Some microprocessors are able to run two or more threads in each core. In this case, the number of logical processors is higher than the number of physical processors.
+Two threads running in the same core are likely to be competing for the same resources, so it may not be efficient to run more threads than CPU cores in this case.
 \vspacesmall
 
-It is not safe to access a pseudo random number generator from multiple threads simultaneously. Instead, you need to make one instance of Ranvec1 for each thread. Each instance should have a different seed. It is recommended to use the combined generator (type 3) with two seeds. The second seed, or both seeds, should be different for each thread. The theoretical reasons for this is explained in the theory article cited on page \pageref{Fog2015TheoryArticle}.
+It is not safe to access a pseudo random number generator from multiple threads simultaneously. Instead, you need to make one instance of Ranvec1 for each thread. Each instance should have a different seed. It is recommended to use the combined generator (type 3) with two seeds. The second seed, or both seeds, should be different for each thread. The theoretical reasons for this are explained in the theory article cited on page \pageref{Fog2015TheoryArticle}.
+\vspacesmall
+
+Example \ref{exampleMultipleThreads} shows how to generate random numbers in multiple threads. Note that there will be one instance of the random number generator object \codei{Ranvec1} in each thread because it is declared inside the thread function.
+
+\vspacesmall
+
+
+\begin{example}
+\label{exampleMultipleThreads}
+\end{example} % frame disappears if I put this after end lstlisting
+\begin{lstlisting}[frame=single]
+// Example of random number generation with multiple threads
+// random_threads.cpp
+
+// Example of command line options for g++ and clang:
+// g++     -O2 -std=c++17 -mavx2 -mfma -pthread random_threads.cpp
+// clang++ -O2 -std=c++17 -mavx2 -mfma -pthread random_threads.cpp
+
+// for Visual Studio only: define desired instruction set:
+// #define INSTRSET 8
+
+#include <stdio.h>
+#include <thread>
+
+#include "ranvec1.h"    // random number generator
+#include "ranvec1.cpp"  // put code in separate module or include
+
+// Thread function. Will run one instance for each thread
+// This function calculates the mean of 1000 random numbers
+void thread_function(int threadnum, int seed, double * result) {
+
+    // Make an instance of the random number generator
+    // (this instance is local to each thread)
+    Ranvec1 ran(3);
+
+    // Initialize. Use the thread number as a second seed to get
+    // different results in each thread
+    ran.init(seed, threadnum);
+
+    // Accumulator for eight sums
+    Vec8d accum = 0.;
+
+    // Generate 1000 random double precision numbers
+    for (int i = 0; i < 125; i++) {
+        // Vector of eight double precision random numbers
+        accum += ran.random8d();
+    }
+    // Calculate sum and mean
+    double sum = horizontal_add(accum);
+    double mean = sum * 0.001;
+
+    // Return result
+    *result = mean;    
+}
+
+int main() {
+
+    // Number of threads
+    const int number_of_threads = 4;
+
+    // Array of thread objects
+    std::thread threads[number_of_threads];
+
+    // Array of results
+    double results[number_of_threads];
+
+    // Arbitrary seed
+    int seed = 25;
+
+    // Start threads
+    for (int t = 0; t < number_of_threads; t++) {
+        threads[t] = 
+        std::thread(thread_function, t, seed, &results[t]);
+    }
+
+    // Wait for threads to finish
+    for (int t = 0; t < number_of_threads; t++) {
+        threads[t].join();
+    }
+
+    // write results
+    for (int i = 0; i < number_of_threads; i++) {     
+        printf("%.6f  ", results[i]);
+    }
+
+    return 0;
+}
+\end{lstlisting}
+\vspacesmall
+
 
 
 \end{document}

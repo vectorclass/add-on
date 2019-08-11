@@ -1,7 +1,7 @@
 /****************************  ranvec1.h   ********************************
 * Author:        Agner Fog
 * Date created:  2014-09-09
-* Last modified: 2019-08-08
+* Last modified: 2019-08-11
 * Version:       2.01
 * Project:       add-on package for vector class library
 * Description:
@@ -118,7 +118,7 @@ int physicalSeed();
 
 // Combined random number generator, base class
 // (Total size depends on instruction set)
-class Ranvec1base {
+class alignas(64) Ranvec1base {
 public:
     Ranvec1base(int gtype = 3);                  // Constructor
     void init(int seed);                         // Initialize with seed
@@ -250,8 +250,8 @@ public:
     }
 #endif
 protected:
-    Ranvec1base * p;                             // Pointer to generator
     uint32_t bb[16];                             // Integer buffer
+    Ranvec1base * p;                             // Pointer to generator
     int ix;                                      // Index into buffer bb
     void fill() {                                // Refill buffer
         p->next(bb);

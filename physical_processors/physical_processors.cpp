@@ -1,8 +1,8 @@
 /*********************  physical_processors.cpp   *****************************
 * Author:        Agner Fog
 * Date created:  2019-10-29
-* Last modified: 2019-10-29
-* Version:       1.00 beta
+* Last modified: 2019-10-31
+* Version:       1.01 beta
 * Project:       vector class library
 * Description:   Detect number of physical and logical processors on CPU chip.
 *                Compile for C++11 or later
@@ -17,10 +17,10 @@ The number of physical processors is the number of CPU cores.
 The number of logical processors is the same number multiplied by the number of
 threads that can run simultaneously in each CPU core.
 
-The optimal number of threads for CPU-intensive tasks is most likely to be the
-number of physical processors. Simultaneous multithreading will slow down 
-performance when two threads running in the same physical processor (CPU core)
-are competing for the same resources. 
+Simultaneous multithreading will slow down performance when two CPU-intensive 
+threads running in the same physical processor (CPU core) are competing for the
+same resources. Therefore, the optimal number of threads for CPU-intensive
+tasks is most likely to be the number of physical processors. 
 
 Tasks that are less CPU-intensive but limited by RAM access, disk access, 
 network, etc. may get an advantage by running as many threads as the number of
@@ -35,14 +35,14 @@ optimal number of threads.
 Note: There are several problems in detecting the number of physical processors:
 
 1. The CPUID instruction on Intel CPUs will return a wrong number of logical
-   processors when SMT (hyperthreading) is disabled. It is necessary to compare
-   the number of processors returned by the CPUID instruction with the number of
-   processors reported by the operating system to detect if SMT is enabled.
-   (AMD processors do not have this problem).
+   processors when SMT (hyperthreading) is disabled. It may be necessary to 
+   compare the number of processors returned by the CPUID instruction with the
+   number of processors reported by the operating system to detect if SMT is 
+   enabled (AMD processors do not have this problem).
 
 2. It is necessary to rely on system functions to detect if there is more than 
    one CPU chip installed. It is assumed that the status of SMT is the same on
-   all CPU chips in a system
+   all CPU chips in a system.
 
 3. The behavior of VIA processors is undocumented.
    
@@ -86,9 +86,11 @@ static inline void cpuid(int output[4], int leaf, int subleaf = 0) {
 #endif
 }
 
+// Function prototype:
 int physicalProcessors(int * logical_processors = 0);
 
-// Find number of physical and logical processors supported by CPU chips
+
+// Find the number of physical and logical processors supported by CPU
 // Parameter: 
 // logical_processors: an optional pointer to an integer that will receive the number of logical processors.
 // Return value: number of physical processors
@@ -126,6 +128,7 @@ int physicalProcessors(int * logical_processors) {
         //    Intel     //
         //////////////////
 
+        int hyper = 0;                           // hyperthreading status: 0 = unknown, 1 = disabled, 2 = enabled
         if (maxLeaf >= 0xB) {                    // leaf 0xB or 0x1F: Extended Topology Enumeration
             int num = 0xB;
             // if (maxLeaf >= 0x1F) num = 0x1F;
@@ -144,6 +147,23 @@ int physicalProcessors(int * logical_processors) {
                 // to fix this in the future if CPUs with more complex configurations appear
             }
             physicalProc = logicalProc / procPerCore;
+
+            // The number of performance monitor registers depends on hyperthreading status
+            // on Intel CPUs with performance monitoring version 3 or 4
+            cpuid(abcd, 0xA, 0);                 // performance monitor counters information
+            int perfVersion = abcd[0] & 0xFF;    // performance monitoring version
+            int perfNum = (abcd[0] >> 8) & 0xFF; // number of performance monitoring registers
+            if (perfVersion == 3 || perfVersion == 4) {
+                if (perfNum == 4) {
+                    hyper = 2;                   // 4 performance registers when hyperthreading enabled
+                }
+                else if (perfNum == 8) {         // 8 performance registers when hyperthreading disabled
+                    hyper = 1;
+                    procPerCore = 1;
+                    logicalProc = physicalProc;  // reduce the number of logical processors when hyperthreading is disabled
+                }
+                // hyper remains 0 in all other cases, indicating unknown status
+            }
         }
         else if (maxLeaf >= 4) {                 // CPUID function 4: cache parameters and cores
             cpuid(abcd, 4);
@@ -161,7 +181,7 @@ int physicalProcessors(int * logical_processors) {
             // Multiple CPU chips. Assume that chips are identical with respect to hypethreading
             physicalProc = systemProcessors * physicalProc / logicalProc;
         }
-        else if (logicalProc > systemProcessors && systemProcessors > 0) {
+        else if (logicalProc > systemProcessors && systemProcessors > 0 && hyper == 0) {
             // Hyperthreading is disabled
             logicalProc = systemProcessors;
             physicalProc = systemProcessors;        

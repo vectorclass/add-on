@@ -1,8 +1,8 @@
 /*********************  physical_processors.cpp   *****************************
 * Author:        Agner Fog
 * Date created:  2019-10-29
-* Last modified: 2019-10-31
-* Version:       1.01 beta
+* Last modified: 2019-11-25
+* Version:       1.02 beta
 * Project:       vector class library
 * Description:   Detect number of physical and logical processors on CPU chip.
 *                Compile for C++11 or later
@@ -180,6 +180,7 @@ int physicalProcessors(int * logical_processors) {
         if (systemProcessors > logicalProc) {
             // Multiple CPU chips. Assume that chips are identical with respect to hypethreading
             physicalProc = systemProcessors * physicalProc / logicalProc;
+            logicalProc = systemProcessors;
         }
         else if (logicalProc > systemProcessors && systemProcessors > 0 && hyper == 0) {
             // Hyperthreading is disabled
@@ -223,6 +224,7 @@ int physicalProcessors(int * logical_processors) {
         if (systemProcessors > logicalProc) {
             // Multiple CPU chips. Assume that chips are identical with respect to SMT
             physicalProc = systemProcessors * physicalProc / logicalProc;
+            logicalProc = systemProcessors;
         }
     }
     else {

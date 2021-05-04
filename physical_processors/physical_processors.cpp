@@ -1,13 +1,13 @@
 /*********************  physical_processors.cpp   *****************************
 * Author:        Agner Fog
 * Date created:  2019-10-29
-* Last modified: 2019-11-25
-* Version:       1.02 beta
+* Last modified: 2021-05-04
+* Version:       2.01 
 * Project:       vector class library
 * Description:   Detect number of physical and logical processors on CPU chip.
 *                Compile for C++11 or later
 *
-* (c) Copyright 2019 Agner Fog.
+* (c) Copyright 2019-2021 Agner Fog.
 * Apache License version 2.0 or later.
 *******************************************************************************
 Some modern CPUs can run two threads in each CPU core when simultaneous 
@@ -55,6 +55,10 @@ Note: There are several problems in detecting the number of physical processors:
 
 #ifdef _MSC_VER
 #include <intrin.h>   // __cpuidex intrinsic function available on microsoft compilers
+#endif
+
+#ifdef VCL_NAMESPACE
+namespace VCL_NAMESPACE {
 #endif
 
 // Define interface to CPUID instruction.
@@ -245,6 +249,10 @@ int physicalProcessors(int * logical_processors) {
     }
     return physicalProc;
 }
+
+#ifdef VCL_NAMESPACE
+}
+#endif
 
 /* Uncomment this for testing:
 

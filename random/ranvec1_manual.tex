@@ -19,6 +19,7 @@
 
 % style for code listing
 \renewcommand{\familydefault}{\sfdefault}
+\renewcommand{\ttdefault}{pcr} % selects Courier font
 \newtheorem{example}{Example}[chapter]  % example numbering
 \lstset{language=C}                     % formatting for code listing
 \lstset{basicstyle=\ttfamily,breaklines=true}
@@ -194,6 +195,14 @@ Fog, Agner: “Pseudo-Random Number Generators for Vector Processors and Multico
 // Example:
 Ranvec1 ran(3);   // Create object ran
 \end{lstlisting}
+\vspacesmall
+
+\begin{tabular}{|p{30mm}|p{100mm}|}
+\hline
+\bfseries Constructor & Ranvec1(int gtype, int seed) \\ \hline
+\bfseries Description & Constructor for Ranvec1 class. Initializing with seed. \\ \hline
+\bfseries Efficiency & medium \\ \hline
+\end{tabular}
 \vspacesmall
 
 \begin{tabular}{|p{30mm}|p{100mm}|}

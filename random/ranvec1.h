@@ -1,8 +1,8 @@
 /****************************  ranvec1.h   ********************************
 * Author:        Agner Fog
 * Date created:  2014-09-09
-* Last modified: 2019-08-11
-* Version:       2.01
+* Last modified: 2022-07-16
+* Version:       2.02
 * Project:       add-on package for vector class library
 * Description:
 * Pseudo random number generators with vector output, header file.
@@ -82,11 +82,11 @@
 * Journal of Modern Applied Statistical Methods 14, no. 1 (2015): article 23.
 * http://digitalcommons.wayne.edu/jmasm/vol14/iss1/23/
 *
-* (c) Copyright 2014-2019 Agner Fog. Apache License version 2.0 or later.
+* (c) Copyright 2014-2022 Agner Fog. Apache License version 2.0 or later.
 ******************************************************************************/
 
 #ifndef RANVEC1_H
-#define RANVEC1_H  201
+#define RANVEC1_H  202
 
 #include "vectorclass.h"
 
@@ -282,6 +282,19 @@ public:
 #endif
     {
         randomixInterval = randomixLimit = 0;
+    }
+    // Constructor with seed
+    Ranvec1(int gtype, int seed1) : Ranvec1base(gtype), buf32(this), buf64(this), buf128(this)
+#if MAX_VECTOR_SIZE >= 256
+        , buf256(this)
+#endif
+#if MAX_VECTOR_SIZE >= 512
+        , buf512(this)
+#endif
+    {
+        randomixInterval = randomixLimit = 0;
+        Ranvec1base::init(seed1);
+        resetBuffers();
     }
     // Initialization with seeds
     void init(int seed) {                        // Initialize with one seed

@@ -1,8 +1,8 @@
 /*************************  test_ranvec.cpp   *********************************
 * Author:        Agner Fog
 * Date created:  2019-07-08
-* Last modified: 2019-07-08
-* Version:       2.00
+* Last modified: 2022-07-16
+* Version:       2.02
 * Project:       add-on package for vector class library
 * Description:
 * Test program for ranvec1.cpp
@@ -14,18 +14,20 @@
 
 
 #ifndef INSTRSET
-#define INSTRSET 8                     // instruction set
+#define INSTRSET 10                    // instruction set
 #endif
 
 #define MAX_VECTOR_SIZE 512
 
 #include "vectorclass.h"               // vector class library
 #include "ranvec1.cpp"                 // random number generator
+#include "physseed.cpp"
 
 
 int main() {
     // Make instance of random number generator class, type 3.
     Ranvec1 ran(3);
+    //Ranvec1 ran(3, 0);   // constructor with seed
 
 #if true           // initialize with single seed
     ran.init(0);

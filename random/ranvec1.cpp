@@ -1,8 +1,8 @@
 /****************************  ranvec1.cpp   **********************************
 * Author:        Agner Fog
 * Date created:  2014-09-09
-* Last modified: 2019-08-08
-* Version:       2.01
+* Last modified: 2022-07-16
+* Version:       2.02
 * Project:       add-on package for vector class library
 * Description:
 * Pseudo random number generators with vector output.
@@ -82,7 +82,7 @@
 * Journal of Modern Applied Statistical Methods 14, no. 1 (2015): article 23.
 * http://digitalcommons.wayne.edu/jmasm/vol14/iss1/23/
 *
-* (c) Copyright 2014-2019 Agner Fog. Apache License version 2.0 or later.
+* (c) Copyright 2014-2022 Agner Fog. Apache License version 2.0 or later.
 ******************************************************************************/
 
 #include "ranvec1.h"
@@ -824,7 +824,7 @@ Vec4i Ranvec1::random4ix(int min, int max) {
       randomixLimit = uint32_t(((uint64_t)1 << 32) / interval) * interval - 1;
       randomixInterval = interval;
    }
-   Vec4ui prods1;                                                              // Random number * interval
+   Vec4ui prods1(0);                                                           // Random number * interval
    Vec4ib reject1(true);                                                       // Initial values in prods1 are invalid
    const Vec4ib select_odd(false,true,false,true);                             // Odd elements true
 
@@ -935,7 +935,7 @@ Vec8i Ranvec1::random8ix(int min, int max) {
       randomixLimit = uint32_t(((uint64_t)1 << 32) / interval) * interval - 1;
       randomixInterval = interval;
    }
-   Vec8ui prods1;                                                              // Random number * interval
+   Vec8ui prods1(0);                                                           // Random number * interval
    Vec8ib reject1 = true;                                                      // Initial values in prods1 are invalid
    const Vec8ib select_odd(false,true,false,true,false,true,false,true);       // Odd elements true
    bool incomplete;                                                            // when not all elements are accepted
@@ -1046,7 +1046,7 @@ Vec16i Ranvec1::random16ix(int min, int max) {
       randomixLimit = uint32_t(((uint64_t)1 << 32) / interval) * interval - 1;
       randomixInterval = interval;
    }
-   Vec16ui prods1;                                                             // Random number * interval
+   Vec16ui prods1(0);                                                          // Random number * interval
    Vec16ib reject1 = true;                                                     // Initial values in prods1 are invalid
    const Vec16ib select_odd(0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1);                  // Odd elements true
    bool incomplete;                                                            // when not all elements are accepted

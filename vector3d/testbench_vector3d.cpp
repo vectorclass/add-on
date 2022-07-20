@@ -1,8 +1,8 @@
 /*************************  testbench_vector3d.cpp   **************************
 * Author:        Agner Fog
 * Date created:  2019-07-14
-* Last modified: 2019-07-14
-* Version:       2.00
+* Last modified: 2022-07-20
+* Version:       2.02.00
 * Project:       Testbench for vector3d.h using vector class library
 * Description:
 * Compile and run this program to test operators and functions in vector3d.h package
@@ -21,7 +21,7 @@
 * Specify the desired instruction set and optimization options as parameters
 * to the compiler.
 *
-* (c) Copyright 2019 Agner Fog.
+* (c) Copyright 2019-2022 Agner Fog.
 * Apache license 2.0
 ******************************************************************************
 
@@ -68,11 +68,11 @@ Test cases:
 //            Specify input parameters here if running from an IDE
 // ----------------------------------------------------------------------------
 
-#define testcase 15
+#define testcase 1
 
 #define vtype Vec3Dd 
 
-#define seed 0
+#define seed 1
 
 
 #endif  // testcase
@@ -365,8 +365,9 @@ vtype referenceFunction(vtype a, vtype b) {
 
 #elif testcase == 24    // extract
 inline vtype testFunction(vtype const& a, vtype const& b) { 
-    uint32_t bb = uint32_t(b.get_x());
-    ST c = a[bb % 3];
+    uint32_t bb = uint32_t(b.get_x()) % 3;
+    //ST c = a.extract(bb % 3);
+    ST c = a[bb];
     return vtype(c, 0, 0);
 }
 vtype referenceFunction(vtype a, vtype b) { 
@@ -376,6 +377,21 @@ vtype referenceFunction(vtype a, vtype b) {
     ST c = aa[bb % 3];
     return vtype(c, 0, 0);
 }
+
+#elif testcase == 25    // insert
+inline vtype testFunction(vtype const& a, vtype const& b) { 
+    uint32_t bb = uint32_t(b.get_x()) % 3;
+    vtype aa = a;
+    return aa.insert(bb, 9.5f);
+}
+vtype referenceFunction(vtype a, vtype b) { 
+    uint32_t bb = uint32_t(b.get_x()) % 3;
+    ST aa[4];
+    a.store(aa);
+    aa[bb] = 9.5f;
+    return vtype().load(aa);
+}
+
 
 
 #else

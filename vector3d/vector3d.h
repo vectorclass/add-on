@@ -1,19 +1,19 @@
 /****************************  vector3d.h   ***********************************
 * Author:        Agner Fog
 * Date created:  2012-08-01
-* Last modified: 2019-07-14
-* Version:       2.00
+* Last modified: 2022-07-20
+* Version:       2.02.00
 * Project:       Extension to vector class library
 * Description:   Classes for 3-dimensional vectors, including operators and functions
 * The following classes are defined:
 * Vec3Df:        A vector of 3 single precision floats
 * Vec3Dd:        A vector of 3 double precision floats
 *
-* (c) Copyright 2012-2019 Apache License version 2.0 or later
+* (c) Copyright 2012-2022 Apache License version 2.0 or later
 \*****************************************************************************/
 
 #ifndef VECTOR3D_H
-#define VECTOR3D_H  200
+#define VECTOR3D_H  20200
 
 #include "vectorclass.h"
 #include <cmath>          // define math library functions
@@ -33,8 +33,7 @@ protected:
     __m128 xmm; // Float vector
 public:
     // default constructor
-    Vec3Df() {
-    }
+    Vec3Df() = default;
     // construct from three coordinates
     Vec3Df(float x, float y, float z) {
         xmm = Vec4f(x, y, z, 0.f);
@@ -90,6 +89,11 @@ public:
     // Operator [] can only read an element, not write.
     float operator [] (uint32_t index) const {
         return extract(index);
+    }
+    // Insert one coordinate
+    Vec3Df & insert (uint32_t index, float x) {
+        xmm = Vec4f(xmm).insert(index, x);
+        return *this;
     }
     static constexpr int size() {
         return 1;
@@ -265,8 +269,7 @@ protected:
     Vec4d yy; // vector of 4 doubles
 public:
     // default constructor
-    Vec3Dd() {
-    }
+    Vec3Dd() = default;
     // construct from three coordinates
     Vec3Dd(double x, double y, double z) {
         yy = Vec4d(x, y, z, 0.);
@@ -334,6 +337,11 @@ public:
     // Operator [] can only read an element, not write.
     double operator [] (uint32_t index) const {
         return extract(index);
+    }
+    // Insert one coordinate
+    Vec3Dd & insert (uint32_t index, double x) {
+        yy.insert(index, x);
+        return *this;
     }
     static constexpr int size() {
         return 1;

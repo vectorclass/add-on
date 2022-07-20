@@ -19,6 +19,7 @@
 
 % style for code listing
 \renewcommand{\familydefault}{\sfdefault}
+\renewcommand{\ttdefault}{pcr} % selects Courier font
 \newtheorem{example}{Example}[chapter]  % example numbering
 \lstset{language=C}                     % formatting for code listing
 \lstset{basicstyle=\ttfamily,breaklines=true}
@@ -268,9 +269,9 @@ double b = a.get_z();  // b = 3
 
 \begin{tabular}{|p{25mm}|p{100mm}|}
 \hline
-\bfseries Method & member function extract(i) \\ \hline
+\bfseries Method & member function extract(index) \\ \hline
 \bfseries Defined for & all 3-D vectors classes \\ \hline
-\bfseries Description & i = 0, 1, 2 give the x, y, or z-coordinate, respectively \\ \hline
+\bfseries Description & index = 0, 1, 2 give the x, y, or z-coordinate, respectively \\ \hline
 \bfseries Efficiency & good \\ \hline
 \end{tabular}
 \vspacesmall
@@ -280,6 +281,22 @@ double b = a.get_z();  // b = 3
 Vec3Dd a(1,2,3);
 double b = a.extract(2);  // b = 3
 double c = a[2];          // b = 3 (the same)
+\end{lstlisting}
+\vspacebig
+
+\begin{tabular}{|p{25mm}|p{100mm}|}
+\hline
+\bfseries Method & member function insert(index, value) \\ \hline
+\bfseries Defined for & all 3-D vectors classes \\ \hline
+\bfseries Description & index = 0, 1, 2 changes the x, y, or z-coordinate, respectively \\ \hline
+\bfseries Efficiency & good \\ \hline
+\end{tabular}
+\vspacesmall
+
+\begin{lstlisting}[frame=none]
+// Example:
+Vec3Dd a(1,2,3);
+a.insert(0, 8);  // a = (8, 2, 3)
 \end{lstlisting}
 \vspacebig
 
@@ -493,9 +510,7 @@ Vec3Dd d = rotate(c0,c1,c2,a); // d = (1,3,-2)
 \vspacebig
 
 
-
 \chapter{Other functions}\label{chap:OtherFunctions}
-
 
 \begin{tabular}{|p{25mm}|p{100mm}|}
 \hline

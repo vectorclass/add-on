@@ -1,8 +1,8 @@
 /***************************  complexvec1.h   *********************************
 * Author:        Agner Fog
 * Date created:  2012-07-24
-* Last modified: 2019-07-12
-* Version:       2.00
+* Last modified: 2022-07-20
+* Version:       2.02.00
 * Project:       Extension to vector class library
 * Description:
 * Classes for complex number algebra and math:
@@ -17,7 +17,7 @@
 * This file defines operators and functions for these classes
 * See complexvec_manual.pdf for detailed instructions.
 *
-* (c) Copyright 2012-2019. Apache License version 2.0 or later
+* (c) Copyright 2012-2022. Apache License version 2.0 or later
 ******************************************************************************/
 
 // The Complex classes do not inherit from the corresponding vector classes
@@ -55,8 +55,7 @@ protected:
     __m128 xmm; // vector of 4 single precision floats. Only the first two are used
 public:
     // default constructor
-    Complex1f() {
-    }
+    Complex1f() = default;
     // construct from real, no imaginary part
     Complex1f(float re) {
         xmm = _mm_load_ss(&re);
@@ -90,6 +89,11 @@ public:
     // Member function to store into array (unaligned)
     void store(float * p) const {
         Vec4f(xmm).store_partial(2, p);
+    }
+    // Member function to insert one complex scalar into complex vector
+    Complex1f insert (int index, Complex1f x) {
+        xmm = x;
+        return *this;
     }
     // Member function to extract one complex scalar from complex vector
     Complex1f extract (int i) const {
@@ -345,7 +349,15 @@ static inline Complex1f csqrt(Complex1f const a) {
 static inline Complex1f select (bool s, Complex1f const a, Complex1f const b) {
     return s ? a : b;
 }
+static inline Complex1f select (Vec4fb const s, Complex1f const a, Complex1f const b) {
+    return Complex1f(select(s, Vec4f(a), Vec4f(b)));
+}
 
+
+// interleave real and imag into complex vector
+static inline Complex1f interleave_c (float const re, float const im) {
+    return Complex1f(re, im);
+}
 
 /*****************************************************************************
 *
@@ -358,8 +370,7 @@ protected:
     __m128 xmm; // vector of 4 single precision floats
 public:
     // default constructor
-    Complex2f() {
-    }
+    Complex2f() = default;
     // construct from real and imaginary parts
     Complex2f(float re0, float im0, float re1, float im1) {
         xmm = Vec4f(re0, im0, re1, im1);
@@ -414,9 +425,31 @@ public:
         __m128 t = _mm_movehl_ps(_mm_setzero_ps(), xmm);
         return Complex1f(t);
     }
+    // Member function to insert one complex scalar into complex vector
+    Complex2f insert (int index, Complex1f x) {
+#if INSTRSET >= 10   // AVX512VL
+        xmm = _mm_castsi128_ps(_mm_mask_broadcastq_epi64(_mm_castps_si128(xmm), __mmask8(1u << index), _mm_castps_si128(x)));
+#else
+        float f[4];
+        store(f);
+        if (uint32_t(index) < 2) {
+            x.store(f+2*index);
+            load(f);
+        }
+#endif
+        return *this;
+    }
     // Member function to extract one complex scalar from complex vector
     Complex1f extract (int i) const {
         return i ? get_high() : get_low();
+    }
+    // get real parts
+    Vec4f real() const {
+        return permute4<0,2,-1,-1>(to_vector());
+    }
+    // get imaginary parts
+    Vec4f imag() const {
+        return permute4<1,3,-1,-1>(to_vector());
     }
     static constexpr int size() {
         return 2;
@@ -651,7 +684,14 @@ static inline Complex2f select (Vec4fb const s, Complex2f const a, Complex2f con
     return Complex2f(select(s, Vec4f(a), Vec4f(b)));
 }
 
+// interleave real and imag into complex vector
+static inline Complex2f interleave_c2 (Vec4f const re, Vec4f const im) {
+    Vec4f c = blend4<0,4,1,5>(re, im);
+    return __m128(c);
+}
 
+
+#if MAX_VECTOR_SIZE >= 256
 /*****************************************************************************
 *
 *               Class Complex4f: four single precision complex numbers
@@ -663,8 +703,7 @@ protected:
     Vec8f y; // vector of 8 floats
 public:
     // default constructor
-    Complex4f() {
-    }
+    Complex4f() = default;
     // construct from real and imaginary parts
     Complex4f(float re0, float im0, float re1, float im1, float re2, float im2, float re3, float im3) 
         : y(re0, im0, re1, im1, re2, im2, re3, im3) {}
@@ -744,6 +783,20 @@ public:
     Complex2f get_high() const {
         return Complex2f(y.get_high());
     }
+    // Member function to insert one complex scalar into complex vector
+    Complex4f insert (int index, Complex1f x) {
+#if INSTRSET >= 10   // AVX512VL
+        y = _mm256_castsi256_ps(_mm256_mask_broadcastq_epi64(_mm256_castps_si256(y), __mmask8(1u << index), _mm_castps_si128(x)));
+#else
+        float f[8];
+        store(f);
+        if (uint32_t(index) < 4) {
+            x.store(f+2*index);
+            load(f);
+        }
+#endif
+        return *this;
+    }
     // Member function to extract one complex scalar from complex vector
     Complex1f extract (int i) const {
 #if INSTRSET >= 10  // AVX512VL
@@ -754,6 +807,16 @@ public:
         store(x);
         return Complex1f().load(x + 2*i);
 #endif
+    }
+    // get real parts
+    Vec4f real() const {
+        return permute8<0,2,4,6,1,3,5,7>(to_vector()).get_low();
+    }
+    // get imaginary parts
+    Vec4f imag() const {
+        // make the permute a common subexpression that can be eliminated 
+        // by the compiler if both real() and imag() are called
+        return permute8<0,2,4,6,1,3,5,7>(to_vector()).get_high();
     }
     static constexpr int size() {
         return 4;
@@ -993,12 +1056,25 @@ static inline Complex4f csqrt(Complex4f const a) {
 }
 
 // function select.
-// Note: s must contain a vector of flor booleans of 64 bits each. 
+// Note: s must contain a vector of four booleans of 64 bits each. 
 static inline Complex4f select (Vec8fb const s, Complex4f const a, Complex4f const b) {
     return Complex4f(select(s, Vec8f(a), Vec8f(b)));
 }
 
+// interleave real and imag into complex vector
+static inline Complex4f interleave_c (Vec4f const re, Vec4f const im) {
+    Vec8f b(re, im);
+    Vec8f c = permute8<0,4,1,5,2,6,3,7>(b);
+#if INSTRSET >= 7  // AVX    
+    return __m256(c);
+#else
+    return Vec256fe(c);
+#endif
+}
 
+#endif  // MAX_VECTOR_SIZE >= 256
+
+#if MAX_VECTOR_SIZE >= 512
 /*****************************************************************************
 *
 *               Class Complex8f: 8 single precision complex numbers
@@ -1010,8 +1086,7 @@ protected:
     Vec16f y; // vector of 8 floats
 public:
     // default constructor
-    Complex8f() {
-    }
+    Complex8f() = default;
     // construct from real and imaginary parts
     Complex8f(float re0, float im0, float re1, float im1, float re2, float im2, float re3, float im3,
         float re4, float im4, float re5, float im5, float re6, float im6, float re7, float im7) 
@@ -1092,6 +1167,20 @@ public:
     Complex4f get_high() const {
         return Complex4f(y.get_high());
     }
+    // Member function to insert one complex scalar into complex vector
+    Complex8f insert (int index, Complex1f x) {
+#if INSTRSET >= 10   // AVX512VL
+        y = _mm512_castsi512_ps(_mm512_mask_broadcastq_epi64(_mm512_castps_si512(y), __mmask16(1u << index), _mm_castps_si128(x)));
+#else
+        float f[16];
+        store(f);
+        if (uint32_t(index) < 8) {
+            x.store(f+2*index);
+            load(f);
+        }
+#endif
+        return *this;
+    }
     // Member function to extract one complex scalar from complex vector
     Complex1f extract (int i) const {
 #if INSTRSET >= 9  // AVX512F
@@ -1102,6 +1191,16 @@ public:
         store(x);
         return Complex1f().load(x + 2*i);
 #endif
+    }
+    // get real parts
+    Vec8f real() const {
+        return permute16<0,2,4,6,8,10,12,14,1,3,5,7,9,11,13,15>(to_vector()).get_low();
+    }
+    // get imaginary parts
+    Vec8f imag() const {
+        // make the permute a common subexpression that can be eliminated 
+        // by the compiler if both real() and imag() are called
+        return permute16<0,2,4,6,8,10,12,14,1,3,5,7,9,11,13,15>(to_vector()).get_high();
     }
     static constexpr int size() {
         return 8;
@@ -1332,6 +1431,18 @@ static inline Complex8f select (Vec16fb const s, Complex8f const a, Complex8f co
     return Complex8f(select(s, a.to_vector(), b.to_vector()));
 }
 
+// interleave real and imag into complex vector
+static inline Complex8f interleave_c (Vec8f const re, Vec8f const im) {
+    Vec16f b(re, im);
+    Vec16f c = permute16<0,8,1,9,2,10,3,11,4,12,5,13,6,14,7,15>(b);
+#if INSTRSET >= 9  // AVX512
+    return __m512(c);
+#else
+    return Complex8f(c);
+#endif
+}
+
+#endif // MAX_VECTOR_SIZE >= 512
 
 /*****************************************************************************
 *
@@ -1344,8 +1455,7 @@ protected:
     __m128d xmm; // double vector
 public:
     // default constructor
-    Complex1d() {
-    }
+    Complex1d() = default;
     // construct from real and imaginary part
     Complex1d(double re, double im) {
         xmm = Vec2d(re, im);
@@ -1387,6 +1497,11 @@ public:
     // get imaginary part
     double imag() const {
         return Vec2d(xmm).extract(1);
+    }
+    // Member function to insert one complex scalar into complex vector
+    Complex1d insert (int index, Complex1d x) {
+        xmm = x;
+        return *this;
     }
     // Member function to extract one complex scalar from complex vector
     Complex1d extract (int i) const {
@@ -1606,8 +1721,17 @@ static inline Complex1d csqrt(Complex1d const a) {
 static inline Complex1d select (bool s, Complex1d const a, Complex1d const b) {
     return s ? a : b;
 }
+static inline Complex1d select (Vec2db const s, Complex1d const a, Complex1d const b) {
+    return Complex1d(select(s, Vec2d(a), Vec2d(b)));
+}
+
+// interleave real and imag into complex vector
+static inline Complex1d interleave_c(double const re, double const im) {
+    return Complex1d(re, im);
+}
 
 
+#if MAX_VECTOR_SIZE >= 256
 /*****************************************************************************
 *
 *               Class Complex2d: one double precision complex number
@@ -1619,8 +1743,7 @@ protected:
     Vec4d y; // vector of 4 doubles
 public:
     // default constructor
-    Complex2d() {
-    }
+    Complex2d() = default;
     // construct from real and imaginary parts
     Complex2d(double re0, double im0, double re1, double im1) 
         : y(re0, im0, re1, im1) {}
@@ -1691,6 +1814,20 @@ public:
     Complex1d get_high() const {
         return Complex1d(y.get_high());
     }
+    // Member function to insert one complex scalar into complex vector
+    Complex2d insert (int index, Complex1d x) {
+#if INSTRSET >= 10   // AVX512VL
+        y = _mm256_mask_broadcast_f64x2(y, __mmask8(3 << (index*2)), x);
+#else
+        if (index == 0) {
+            *this = Complex2d(x, get_high());
+        }
+        else if (index == 1) {
+            *this = Complex2d(get_low(), x);
+        }
+#endif
+        return *this;
+    }
     // Member function to extract one complex scalar from complex vector
     Complex1d extract (int i) const {
 #if INSTRSET >= 10  // AVX512VL
@@ -1701,6 +1838,16 @@ public:
         store(x);
         return Complex1d().load(x + 2*i);
 #endif
+    }
+    // get real parts
+    Vec2d real() const {
+        return permute4<0,2,1,3>(to_vector()).get_low();
+    }
+    // get imaginary parts
+    Vec2d imag() const {
+        // make the permute a common subexpression that can be eliminated 
+        // by the compiler if both real() and imag() are called
+        return permute4<0,2,1,3>(to_vector()).get_high();
     }
     static constexpr int size() {
         return 2;
@@ -1935,7 +2082,21 @@ static inline Complex2d select (Vec4db const s, Complex2d const a, Complex2d con
     return Complex2d(select(s, Vec4d(a), Vec4d(b)));
 }
 
+// interleave real and imag into complex vector
+static inline Complex2d interleave_c (Vec2d const re, Vec2d const im) {
+    Vec4d c(re, im);
+    Vec4d d = permute4<0,2,1,3>(c);
+#if INSTRSET >= 7  // AVX
+    return __m256d(d);
+#else
+    return  Vec256de(d);
+#endif
+}
 
+
+#endif // if MAX_VECTOR_SIZE >= 256
+
+#if MAX_VECTOR_SIZE >= 512
 /*****************************************************************************
 *
 *               Class Complex4d: one double precision complex number
@@ -1947,8 +2108,7 @@ protected:
     Vec8d y; // vector of 4 doubles
 public:
     // default constructor
-    Complex4d() {
-    }
+    Complex4d() = default;
     // construct from real and imaginary parts
     Complex4d(double re0, double im0, double re1, double im1,
         double re2, double im2, double re3, double im3) 
@@ -2021,6 +2181,18 @@ public:
     Complex2d get_high() const {
         return Complex2d(y.get_high());
     }
+    // Member function to insert one complex scalar into complex vector
+    Complex4d insert (int index, Complex1d x) {
+#if INSTRSET >= 10   // AVX512VL
+        y = _mm512_mask_broadcast_f64x2(y, __mmask8(3 << (index*2)), x);
+#else
+        Complex4d a(x,x,x,x);
+        Vec8db s;
+        s.load_bits(3 << (2*index));
+        *this = Complex4d(select(s, a.to_vector(), to_vector()));
+#endif
+        return *this;
+    }
     // Member function to extract one complex scalar from complex vector
     Complex1d extract (int i) const {
 #if INSTRSET >= 9  // AVX512VL
@@ -2031,6 +2203,16 @@ public:
         store(x);
         return Complex1d().load(x + 2*i);
 #endif
+    }
+    // get real parts
+    Vec4d real() const {
+        return permute8<0,2,4,6,1,3,5,7>(to_vector()).get_low();
+    }
+    // get imaginary parts
+    Vec4d imag() const {
+        // make the permute a common subexpression that can be eliminated 
+        // by the compiler if both real() and imag() are called
+        return permute8<0,2,4,6,1,3,5,7>(to_vector()).get_high();
     }
     static constexpr int size() {
         return 4;
@@ -2140,8 +2322,8 @@ static inline Complex4d operator ~ (Complex4d const a) {
 
 // operator == : returns true if a == b
 static inline Vec8db operator == (Complex4d const a, Complex4d const b) {
-    Vec8db eq0 = a.to_vector() == b.to_vector();
 #if COMPACT_BOOL
+    Vec8db eq0 = a.to_vector() == b.to_vector();
     uint8_t k1 = __mmask8(eq0);                  // convert to bits
     uint8_t k2 = k1 & (k1 >> 1) & 0x55;          // AND bits from real and imaginary parts
     return uint8_t(k2 * 3);                      // expand each into two bits
@@ -2269,6 +2451,18 @@ static inline Complex4d select (Vec8db const s, Complex4d const a, Complex4d con
     return Complex4d(select(s, a.to_vector(), b.to_vector()));
 }
 
+// interleave real and imag into complex vector
+static inline Complex4d interleave_c (Vec4d const re, Vec4d const im) {
+    Vec8d c(re, im);
+    Vec8d d = permute8<0,4,1,5,2,6,3,7>(c);
+#if INSTRSET >= 9  // AVX512
+    return __m512d(d);
+#else
+    return Complex4d(d);
+#endif
+}
+
+#endif  // MAX_VECTOR_SIZE >= 512
 
 /*****************************************************************************
 *
@@ -2281,6 +2475,13 @@ static inline Complex1f to_float (Complex1d const a) {
     return _mm_cvtpd_ps(a);
 }
 
+// function to_double: convert Complex1f to Complex1d
+static inline Complex1d to_double (Complex1f const a) {
+    return _mm_cvtps_pd(a);
+}
+
+
+#if MAX_VECTOR_SIZE >= 256
 // function to_float: convert Complex2d to Complex2f
 static inline Complex2f to_float (Complex2d const a) {
 #if INSTRSET >= 7  // AVX
@@ -2290,26 +2491,25 @@ static inline Complex2f to_float (Complex2d const a) {
 #endif
 }
 
-// function to_float: convert Complex2d to Complex2f
-static inline Complex4f to_float (Complex4d const a) {
-#if INSTRSET >= 9  // AVX512
-    return _mm512_cvtpd_ps(a);
-#else
-    return Complex4f(to_float(a.get_low()), to_float(a.get_high()));
-#endif
-}
-
-// function to_double: convert Complex1f to Complex1d
-static inline Complex1d to_double (Complex1f const a) {
-    return _mm_cvtps_pd(a);
-}
-
 // function to_double: convert Complex2f to Complex2d
 static inline Complex2d to_double (Complex2f const a) {
 #if INSTRSET >= 7  // AVX
     return _mm256_cvtps_pd(a);
 #else
     return Complex2d(to_double(a.get_low()), to_double(a.get_high()));
+#endif
+}
+
+
+#endif  // MAX_VECTOR_SIZE >= 256
+
+#if MAX_VECTOR_SIZE >= 512
+// function to_float: convert Complex2d to Complex2f
+static inline Complex4f to_float (Complex4d const a) {
+#if INSTRSET >= 9  // AVX512
+    return _mm512_cvtpd_ps(a);
+#else
+    return Complex4f(to_float(a.get_low()), to_float(a.get_high()));
 #endif
 }
 
@@ -2322,7 +2522,8 @@ static inline Complex4d to_double (Complex4f const a) {
 #endif
 }
 
-#if VECTORCLASS_H >= 20000
+#endif  // MAX_VECTOR_SIZE >= 512
+
 
 // complex sum of vector elements
 template <typename C>
@@ -2344,13 +2545,116 @@ static inline auto chorizontal_add (C const a) {
             }
             else {
                 auto d = c.get_low() + c.get_high();
-                static_assert(d.size() == 1, "Unknown complex vector size");
-                return d;
+                if constexpr (d.size() == 1) {
+                    return d;
+                }
+                else {
+                    auto e = d.get_low() + d.get_high();
+                    static_assert(e.size() == 1, "Unknown complex vector size");
+                    if constexpr (e.size() == 1) {
+                        return e;
+                    }
+                }
             }
         }
     }
 }
-#endif  // VECTORCLASS_H >= 20000
+
+// flip odd and even vector elements. used internally
+template <typename V>
+static inline V flip_odd_even(V const a) {
+    V flip = a;
+    if constexpr (V::size() == 2) {
+        flip = permute2<1,0>(a);
+    }
+    else if constexpr (V::size() == 4) {
+        flip = permute4<1,0,3,2>(a);
+    }
+    else if constexpr (V::size() == 8) {
+        flip = permute8<1,0,3,2,5,4,7,6>(a);
+    }
+    else if constexpr (V::size() == 16) {
+        flip = permute16<1,0,3,2,5,4,7,6,9,8,11,10,13,12,15,14>(a);
+    }
+    else if constexpr (V::size() == 32) {
+        flip = permute32<1,0,3,2,5,4,7,6,9,8,11,10,13,12,15,14,17,16,19,18,21,20,23,22,25,24,27,26,29,28,31,30>(a);
+    }
+    return flip;
+}
+
+// multiplication, without loss of precision
+template <typename C>
+static inline C mul_accurate (C const a, C const b) {
+    auto aa = a.to_vector();          // a as vector of interleaved real and imaginary parts
+    auto bb = b.to_vector();          // a as vector of interleaved real and imaginary parts
+    typedef decltype(aa) V;           // vector type
+    V b_flip = aa, a_im = aa, a_re = aa;
+    if constexpr (V::size() == 2) {
+        b_flip = permute2<1,0>(bb);        // Swap b.re and b.im
+        a_im   = permute2<1,1>(aa);        // Imag part of a in both
+        a_re   = permute2<0,0>(aa);        // Real part of a in both
+        b_flip = change_sign<1,0>(b_flip); // change sign of real part
+    }
+    else if constexpr (V::size() == 4) {
+        b_flip = permute4<1,0,3,2>(bb);        // Swap b.re and b.im
+        a_im   = permute4<1,1,3,3>(aa);        // Imag part of a in both
+        a_re   = permute4<0,0,2,2>(aa);        // Real part of a in both
+        b_flip = change_sign<1,0,1,0>(b_flip); // change sign of real part
+    }
+    else if constexpr (V::size() == 8) {
+        b_flip = permute8<1,0,3,2,5,4,7,6>(bb);        // Swap b.re and b.im
+        a_im   = permute8<1,1,3,3,5,5,7,7>(aa);        // Imag part of a in both
+        a_re   = permute8<0,0,2,2,4,4,6,6>(aa);        // Real part of a in both
+        b_flip = change_sign<1,0,1,0,1,0,1,0>(b_flip); // change sign of real part
+    }
+    else if constexpr (V::size() == 16) {
+        b_flip = permute16<1,0,3,2,5,4,7,6,9,8,11,10,13,12,15,14>(bb); // Swap b.re and b.im
+        a_im   = permute16<1,1,3,3,5,5,7,7,9,9,11,11,13,13,15,15>(aa); // Imag part of a in both
+        a_re   = permute16<0,0,2,2,4,4,6,6,8,8,10,10,12,12,14,14>(aa); // Real part of a in both
+        b_flip = change_sign<1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0>(b_flip); // change sign of real part
+    }
+    else if constexpr (V::size() == 32) {
+        b_flip = permute32<1,0,3,2,5,4,7,6,9,8,11,10,13,12,15,14,17,16,19,18,21,20,23,22,25,24,27,26,29,28,31,30>(bb); // Swap b.re and b.im
+        a_im   = permute32<1,1,3,3,5,5,7,7,9,9,11,11,13,13,15,15,17,17,19,19,21,21,23,23,25,25,27,27,29,29,31,31>(aa); // Imag part of a in both
+        a_re   = permute32<0,0,2,2,4,4,6,6,8,8,10,10,12,12,14,14,16,16,18,18,20,20,22,22,24,24,26,26,28,28,30,30>(aa); // Real part of a in both
+        b_flip = change_sign<1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0>(b_flip); // change sign of real part
+    }
+    V aib = a_im * b_flip;                  // (-a.im*b.im, a.im*b.re)
+    V arb = a_re * bb;                      // (a.re*b.re,  a.re*b.im)
+    V aibrem = mul_sub(a_im, b_flip, aib);  // remaining bits of aib
+    V arbrem = mul_sub(a_re, bb, arb);      // remaining bits of arb
+    V prod = aib + arb + (aibrem + arbrem); // add high and low bits
+    return C(prod);                         // return corrected product  
+}
+
+// division, without loss of precision
+template <typename C>
+static inline C div_accurate (C const a, C const b) {
+    C pp = mul_accurate(a, ~b);
+    auto bb = b.to_vector();
+    auto nn = bb * bb;
+    auto nn_flip = flip_odd_even(nn);
+    auto dd = pp.to_vector() / (nn + nn_flip);   // a/b = (a*~b)/norm_squared(b)
+    return C(dd);
+}
+
+// compare complex numbers. abs_greater: abs(a) > abs(b)
+template <typename C>
+static inline auto abs_greater(C const a, C const b) {
+    auto aa = a.to_vector();
+    auto bb = b.to_vector();
+    auto a2 = aa * aa;
+    auto b2 = bb * bb;
+    auto absa2 = a2 + flip_odd_even(a2);
+    auto absb2 = b2 + flip_odd_even(b2);
+    return absa2 > absb2;
+}
+
+// compare complex numbers. abs_less: abs(a) < abs(b)
+template <typename C>
+static inline auto abs_less(C const a, C const b) {
+    return abs_greater(b, a);
+}
 
 
 
@@ -2388,6 +2692,10 @@ static inline C cexp (C const a) {     // complex exponential function
         re = permute16<0,0,2,2,4,4,6,6,8,8,10,10,12,12,14,14>(vec);
         im = permute16<1,1,3,3,5,5,7,7,9,9,11,11,13,13,15,15>(vec);
     }
+    else if constexpr (vec.size() == 32) {
+        re = permute32<0,0,2,2,4,4,6,6,8,8,10,10,12,12,14,14,16,16,18,18,20,20,22,22,24,24,26,26,28,28,30,30>(vec);
+        im = permute32<1,1,3,3,5,5,7,7,9,9,11,11,13,13,15,15,17,17,19,19,21,21,23,23,25,25,27,27,29,29,31,31>(vec);
+    }
     // get sin and cos of imag part
     auto cosi = vec;
     auto sini = sincos(&cosi, im);
@@ -2406,6 +2714,9 @@ static inline C cexp (C const a) {     // complex exponential function
     }
     else if constexpr (vec.size() == 16) {
         sincosi = blend16<0,17,2,19,4,21,6,23,8,25,10,27,12,29,14,31>(cosi, sini);
+    }
+    else if constexpr (vec.size() == 32) {
+        sincosi = blend32<0,33,2,35,4,37,6,39,8,41,10,43,12,45,14,47,16,49,18,51,20,53,22,55,24,57,26,59,28,61,30,63>(cosi, sini);
     }
     // multiply (sin(im) + i*cos(im)) by exp(re)
     auto result = expr * sincosi;
@@ -2471,72 +2782,6 @@ static inline C clog (C const a) {     // complex logarithm function
     return C(result);
 }
 
-
-/* I have tried to make more precise versions of multiplication and division to 
-avoid the problem that a*b and b*a might give slightly different results, 
-but this does not seem to help.
-
-// multiplication, without loss of precision
-template <typename C>
-static inline C mul_precise (C const a, C const b) {
-    auto aa = a.to_vector();          // a as vector of interleaved real and imaginary parts
-    auto bb = b.to_vector();          // a as vector of interleaved real and imaginary parts
-    typedef decltype(aa) V;           // vector type
-    V b_flip = aa, a_im = aa, a_re = aa;
-    if constexpr (V::size() == 2) {
-        b_flip = permute2<1,0>(bb);        // Swap b.re and b.im
-        a_im   = permute2<1,1>(aa);        // Imag part of a in both
-        a_re   = permute2<0,0>(aa);        // Real part of a in both
-        b_flip = change_sign<1,0>(b_flip); // change sign of real part
-    }
-    else if constexpr (V::size() == 4) {
-        b_flip = permute4<1,0,3,2>(bb);        // Swap b.re and b.im
-        a_im   = permute4<1,1,3,3>(aa);        // Imag part of a in both
-        a_re   = permute4<0,0,2,2>(aa);        // Real part of a in both
-        b_flip = change_sign<1,0,1,0>(b_flip); // change sign of real part
-    }
-    else if constexpr (V::size() == 8) {
-        b_flip = permute8<1,0,3,2,5,4,7,6>(bb);        // Swap b.re and b.im
-        a_im   = permute8<1,1,3,3,5,5,7,7>(aa);        // Imag part of a in both
-        a_re   = permute8<0,0,2,2,4,4,6,6>(aa);        // Real part of a in both
-        b_flip = change_sign<1,0,1,0,1,0,1,0>(b_flip); // change sign of real part
-    }
-    else if constexpr (V::size() == 16) {
-        b_flip = permute16<1,0,3,2,5,4,7,6,9,8,11,10,13,12,15,14>(bb); // Swap b.re and b.im
-        a_im   = permute16<1,1,3,3,5,5,7,7,9,9,11,11,13,13,15,15>(aa); // Imag part of a in both
-        a_re   = permute16<0,0,2,2,4,4,6,6,8,8,10,10,12,12,14,14>(aa); // Real part of a in both
-        b_flip = change_sign<1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0>(b_flip); // change sign of real part
-    }
-    V aib = a_im * b_flip;                  // (-a.im*b.im, a.im*b.re)
-    V prod = mul_add(a_re, bb, aib);        // a.re*b.re-a.im*b.im, a.re*b.im+a.im*b.re)
-    V remain = mul_sub(a_im, b_flip, aib);  // remaining error in aib
-    prod -= remain;                         // correct for loss of precision
-    return C(prod);                         // return corrected product
-}
-
-// division, without loss of precision
-template <typename C>
-static inline C div_precise (C const a, C const b) {
-    C pp = mul_precise(a, ~b);
-    auto bb = b.to_vector();
-    auto nn = bb * bb;
-    auto nn_flip = nn;
-    if constexpr (bb.size() == 2) {
-        nn_flip = permute2<1,0>(nn);             // Swap real and imag part
-    }
-    else if constexpr (bb.size() == 4) {
-        nn_flip = permute4<1,0,3,2>(nn);         // Swap real and imag part
-    }
-    else if constexpr (bb.size() == 8) {
-        nn_flip = permute8<1,0,3,2,5,4,7,6>(nn); // Swap real and imag part
-    }
-    else if constexpr (bb.size() == 16) {
-        nn_flip = permute16<1,0,3,2,5,4,7,6,9,8,11,10,13,12,15,14>(nn); // Swap real and imag part
-    }
-    auto dd = pp.to_vector() / (nn + nn_flip);   // a/b = (a*~b)/norm_squared(b)
-    return C(dd);
-}
-*/
 
 #endif // VECTORMATH_EXP_H, VECTORMATH_TRIG_H
 

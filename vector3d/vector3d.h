@@ -1,7 +1,7 @@
 /****************************  vector3d.h   ***********************************
 * Author:        Agner Fog
 * Date created:  2012-08-01
-* Last modified: 2022-07-20
+* Last modified: 2023-05-14
 * Version:       2.02.00
 * Project:       Extension to vector class library
 * Description:   Classes for 3-dimensional vectors, including operators and functions
@@ -9,7 +9,7 @@
 * Vec3Df:        A vector of 3 single precision floats
 * Vec3Dd:        A vector of 3 double precision floats
 *
-* (c) Copyright 2012-2022 Apache License version 2.0 or later
+* (c) Copyright 2012-2023 Apache License version 2.0 or later
 \*****************************************************************************/
 
 #ifndef VECTOR3D_H
@@ -17,6 +17,10 @@
 
 #include "vectorclass.h"
 #include <cmath>          // define math library functions
+
+#if VECTORCLASS_H < 20000
+#error Incompatible version of vector class library. Must use version 2 or later
+#endif
 
 #ifdef VCL_NAMESPACE
 namespace VCL_NAMESPACE {

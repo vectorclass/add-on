@@ -1,7 +1,7 @@
 /****************************  matrixv.h   ************************************
 * Author:        Agner Fog
 * Date created:  2022-07-08
-* Last modified: 2022-07-11
+* Last modified: 2023-09-13
 * Version:       2.02.00
 * Description:
 * Header file for matrix container class template.
@@ -9,7 +9,7 @@
 *
 * For further instructions, see containers_manual.pdf
 *
-* (c) Copyright 2022 Agner Fog.
+* (c) Copyright 2022 - 2023 Agner Fog.
 * Apache License version 2.0 or later.
 ******************************************************************************/
 
@@ -159,14 +159,14 @@ public:
         }
     }
     // load entire matrix from an array or C-style matrix (row major order)
-    void load(void * p) {
+    void load(void const * p) {
         int r, c;   // row and column index
         for (r = 0; r < rows; r++) {   // row loop     
             for (c = 0; c < full_vectors_per_row(); c++) {  // column loop               
-                mat[r][c].load((etype*)p + r * columns + c * row_vector_type::size());  // load full vector
+                mat[r][c].load((etype const *)p + r * columns + c * row_vector_type::size());  // load full vector
             }
             if constexpr (partial_vector_elements()) {
-                mat[r][c].load_partial(partial_vector_elements(), (etype*)p + r * columns + c * row_vector_type::size()); // load remaining partial vector
+                mat[r][c].load_partial(partial_vector_elements(), (etype const *)p + r * columns + c * row_vector_type::size()); // load remaining partial vector
             } 
         }    
     }

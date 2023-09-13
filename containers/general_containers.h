@@ -1,7 +1,7 @@
 /************************  general_containers.h   *****************************
 * Author:        Agner Fog
 * Date created:  2022-07-05
-* Last modified: 2022-07-11
+* Last modified: 2023-09-13
 * Version:       2.02.00
 * Description:
 * Header file for general container classes
@@ -20,7 +20,7 @@
  
 * For further instructions, see containers_manual.pdf
 *
-* (c) Copyright 2022 Agner Fog.
+* (c) Copyright 2022 - 2023 Agner Fog.
 * Apache License version 2.0 or later.
 ******************************************************************************/
 
@@ -96,7 +96,7 @@ public:
             return buf[0];
         }
     }
-    void load(int n, T * p) {                    // load n objects from array
+    void load(int n, T const * p) {              // load n objects from array
         if (n <= 0) return;                      // nothing to do
         if ((unsigned int)n > nobjects) n = nobjects;// max size
         for (int i = 0; i < n; i++) {

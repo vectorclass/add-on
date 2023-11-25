@@ -1,7 +1,7 @@
 /************************  vector_containers.h   ******************************
 * Author:        Agner Fog
 * Date created:  2022-07-04
-* Last modified: 2023-09-13
+* Last modified: 2023-11-25
 * Version:       2.02.00
 * Project:       vector class library
 * Description:
@@ -261,18 +261,18 @@ public:
             (*errorfunction)();                  // call error handler
         }
     }
-    void load(int n, void * p) {                 // load n elements from array
+    void load(int n, void const * p) {           // load n elements from array
         if (n <= 0) return;                      // nothing to do
         if (uint32_t(n) > nelements) n = nelements;// max size
         int m = (uint32_t)n >> s_count();        // number of full vectors to load
         int i;                                   // loop counter
         for (i = 0; i < m; i++) {
-            buf[i].load((etype*)p + i * V::size()); // store one vector
+            buf[i].load((etype const*)p + i * V::size()); // store one vector
         }
         int partial = n & (V::size() - 1);       // any partial store needed
         if (partial) {                           // n is not divisible by vector size
             // load partial vector in the end
-            buf[i].load_partial(partial, (etype*)p + i * V::size()); // load part of last vector       
+            buf[i].load_partial(partial, (etype const*)p + i * V::size()); // load part of last vector       
         }
     }
     void store(int n, void * p) {                // store n elements to array

@@ -19,6 +19,7 @@
 
 % style for code listing
 \renewcommand{\familydefault}{\sfdefault}
+\renewcommand{\ttdefault}{pcr}          % selects Courier font
 \newtheorem{example}{Example}[chapter]  % example numbering
 \lstset{language=C}                     % formatting for code listing
 \lstset{basicstyle=\ttfamily,breaklines=true}
@@ -194,7 +195,7 @@ Gives the size of the internal buffer, which may be bigger than specified by the
 The operator \codei{[]} works like an array index. This makes it possible to read or write a single element in the array. The code checks that the index is within the range $0 \leq$ \codei{index} $<$ \codei{size()}.
 \vspacebig
 
-{\bfseries void load(int n, T {*} p)}\\
+{\bfseries void load(int n, T const {*} p)}\\
 Loads \codei{n} objects from an array \codei{p}.\\
 \codei{n} is the size of the array \codei{p} or the maximum number of elements to load. If \codei{n} is bigger than the size of the \codei{ContainerG} then it is reduced to the size of the container.
 \vspacebig
@@ -229,7 +230,7 @@ The memory is zeroed at the first call to \codei{set\_size}, but it is not neces
 \codei{template <typename V, int n> class ContainerV};
 \vspacebig
 
-This container is designed for VCL vectors only. Vectors of all integer and floating point types are allowed, but not boolean types. Access is provided to each vector as well as individual vector elements.
+This container is designed for VCL vectors only. Vectors of all integer and floating point types are allowed, but not boolean types. Access is provided to each vector as well as to individual vector elements.
 \vspacesmall
 
 \begin{lstlisting}[frame=none]
@@ -303,7 +304,7 @@ Returns a single vector element. The index runs consecutively through all vector
 Replaces a single vector element. The index runs consecutively through all vectors in the container, from 0 to (number of vectors) * (elements per vector) - 1.
 \vspacebig
 
-{\bfseries load(int n, void * p)}\\
+{\bfseries load(int n, void const {*} p)}\\
 Loads values from an array into the container. p points to an array of type 
 \codei{etype}. n is the array size or the maximum number of vector elements to load. If n is not a multiple of the vector size then the last vector will be partially filled. If n is bigger than the container size, then it is limited to the container size. If n is smaller than the container size, then the remaining full vectors are unchanged.
 \vspacebig
@@ -442,64 +443,64 @@ The template defines \codei{etype} as the type of the vector elements. For examp
 {\bfseries Member functions:}\\
 \vspacebig
 
-{\bfseries int nrows();}\\
+{\bfseries int nrows()}\\
 Returns the number of rows in the matrix.
 \vspacebig
 
-{\bfseries int ncolumns();}\\
+{\bfseries int ncolumns()}\\
 Returns the number of columns in the matrix.
 \vspacebig
 
-{\bfseries int vectors\_per\_row();}\\
+{\bfseries int vectors\_per\_row()}\\
 Returns the number of vectors of class \codei{row\_vector\_type} that are used for each row. Any partially used vector is included.
 \vspacebig
 
-{\bfseries int full\_vectors\_per\_row();}\\
+{\bfseries int full\_vectors\_per\_row()}\\
 Returns the number of fully-used vectors of class \codei{row\_vector\_type} that are used for each row. Any partially used vector is not included.
 \vspacebig
 
-{\bfseries int partial\_vector\_elements();}\\
+{\bfseries int partial\_vector\_elements()}\\
 If the number of columns is not divisible by the number of elements in vector class \codei{row\_vector\_type} then the last vector in each row will be partially used. This function returns the number of used elements in a partially-used vector. The function returns 0 if there are no partially used vectors.
 \vspacebig
 
-{\bfseries set\_error\_handler(void ({*}err)(void));}\\
+{\bfseries set\_error\_handler(void ({*}err)(void))}\\
 This function is used for registering a function for reporting errors such as an index out of range. \codei{err} should be a function that reports the error in a way that is appropriate for the actual user interface. The program will crash in case a row or column index is out of range if no error-handling function is registered.
 \vspacebig
 
-{\bfseries void ({*}get\_error\_handler())(void);}\\
+{\bfseries void ({*}get\_error\_handler())(void)}\\
 Returns a pointer to the function set by \codei{set\_error\_handler}.
 \vspacebig
 
-{\bfseries row\_vector\_type get\_row(int r, int i = 0);}\\
+{\bfseries row\_vector\_type get\_row(int r, int i = 0)}\\
 Returns row number \codei{r} as a vector of class \codei{row\_vector\_type}. \\
 Row numbers go from 0 to \codei{nrows()-1}.\\ 
 If each row contains more than one vector then call \codei{get\_row} multiple times with \codei{i} going from 0 to \codei{vectors\_per\_row() - 1}.
 \vspacebig
 
-{\bfseries set\_row(row\_vector\_type x, int r, int i = 0);}\\
+{\bfseries set\_row(row\_vector\_type x, int r, int i = 0)}\\
 Sets row number \codei{r} to a vector of class \codei{row\_vector\_type}. \\
 Row numbers go from 0 to \codei{nrows()-1}.\\ 
 If each row contains more than one vector then call \codei{set\_row} multiple times with \codei{i} going from 0 to \codei{vectors\_per\_row() - 1}.
 \vspacebig
 
-{\bfseries etype get\_element(int row, int column);}\\
+{\bfseries etype get\_element(int row, int column)}\\
 Returns a single element from the matrix.\\
 The row number goes from 0 to \codei{nrows()-1}.\\ 
 The column number goes from 0 to \codei{ncolumns()-1}.
 \vspacebig
 
-{\bfseries set\_element(etype x, int row, int column);}\\
+{\bfseries set\_element(etype x, int row, int column)}\\
 Changes a single element in the matrix.\\
 The row number goes from 0 to \codei{nrows()-1}.\\ 
 The column number goes from 0 to \codei{ncolumns()-1}.
 \vspacebig
 
-{\bfseries load(void {*} p);}\\
+{\bfseries load(void const {*} p)}\\
 Fills the entire matrix with data from a C-style matrix or linear array pointed to by \codei{p}. The matrix or array must contain (rows * columns) elements.\\
 The elements are retrieved in row-major order in accordance with the C standard.
 \vspacebig
 
-{\bfseries store(void {*} p);}\\
+{\bfseries store(void {*} p)}\\
 A C-style matrix or array pointed to by \codei{p} is filled with all data from the entire matrix. The number of elements stored at \codei{ {*}p} is (rows * columns).\\
 The elements are stored in row-major order in accordance with the C standard.
 \vspacebig
@@ -523,14 +524,14 @@ It is recommended to call the \codei{zero} member function first if the matrix e
 Several functions are defined for packing multiple matrix rows into one big vector and for unpacking such a vector into multiple matrix rows. These functions cannot be used if the number of columns is too big for multiple rows to fit into a single large vector.
 \vspacesmall
 
-The pack and unpack functions are useful in cases where matrix elements are accessed in other patterns than rowwise and when permutations are needed, such as matrix transposition and matrix-by-matrix products. The pack and unpack functions support all floating point vector classes and integer vector classes with integer types of at least 16 bits.
+The pack and unpack functions are useful in cases where matrix elements are accessed in other patterns than rowwise and when permutations are needed, such as matrix transposition and matrix-by-matrix products. The pack and unpack functions support all floating point vector classes and integer vector classes with integer types of at least 16 bits. 8-bit integers are not supported.
 \vspacebig
 
 {\bfseries Pack functions}\\
-\codei{template <typename M> auto pack2rows(M \& matrix, int first\_row);}\\
-\codei{template <typename M> auto pack3rows(M \& matrix, int first\_row);}\\
-\codei{template <typename M> auto pack4rows(M \& matrix, int first\_row);}\\
-\codei{template <typename M> auto pack5rows(M \& matrix, int first\_row);}
+\codei{template <typename M> auto pack2rows(M \& matrix, int first\_row)}\\
+\codei{template <typename M> auto pack3rows(M \& matrix, int first\_row)}\\
+\codei{template <typename M> auto pack4rows(M \& matrix, int first\_row)}\\
+\codei{template <typename M> auto pack5rows(M \& matrix, int first\_row)}
 \vspacebig
 
 These functions will pack n consecutive rows of a \codei{MatrixV} matrix into a single vector, provided that a vector class with sufficient size exists.
@@ -547,10 +548,10 @@ The error handling function set by \codei{set\_error\_handler} for the matrix wi
 \vspacebig
 
 {\bfseries Unpack functions}\\
-\codei{template <typename V, typename M> unpack2rows(V rr, M \& matrix, int first\_row));}\\
-\codei{template <typename V, typename M> unpack3rows(V rr, M \& matrix, int first\_row));}\\
-\codei{template <typename V, typename M> unpack4rows(V rr, M \& matrix, int first\_row));}\\
-\codei{template <typename V, typename M> unpack5rows(V rr, M \& matrix, int first\_row));}\\
+\codei{template <typename V, typename M> unpack2rows(V rr, M \& matrix, int first\_row))}\\
+\codei{template <typename V, typename M> unpack3rows(V rr, M \& matrix, int first\_row))}\\
+\codei{template <typename V, typename M> unpack4rows(V rr, M \& matrix, int first\_row))}\\
+\codei{template <typename V, typename M> unpack5rows(V rr, M \& matrix, int first\_row))}\\
 \vspacebig
 
 These functions are doing the opposite of the pack functions. The large vector \codei{rr} is unpacked to fill n consecutive rows of the matrix \codei{M}. The unpack functions can be used for initializing or modifying a matrix.
@@ -671,7 +672,7 @@ int main() {
     // Unpack product vector into matrix AxB
     unpack3rows(AxBpack, AxB, 0);
 
-    // Print pprocuct matrix AxB
+    // Print product matrix AxB
     printf("\n   AxB:\n");
     print_matrix(AxB);
 }
